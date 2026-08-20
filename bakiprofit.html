@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAKIPROFIT</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --purple: #7C3AED;
+    --pink: #EC4899;
+    --bg: #140B16;
+    --card: #1F1420;
+    --text: #F4F2FA;
+    --muted: #9B93B8;
+    --green: #34D399;
+    --red: #F87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(circle at 15% 5%, rgba(236, 72, 153, 0.35) 0%, transparent 45%),
+      radial-gradient(circle at 90% 85%, rgba(52, 211, 153, 0.25) 0%, transparent 50%),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .app { width: 100%; max-width: 560px; margin: 0 auto; }
+  .logo {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--pink), #F472B6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .tagline { text-align: center; color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    margin-bottom: 20px;
+  }
+  h2 { font-size: 1rem; margin-bottom: 16px; color: var(--text); }
+  .row-2 { display: flex; gap: 10px; }
+  .field { flex: 1; margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  input, select {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid #4A2E42;
+    background: #1F1219;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--pink); }
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--pink), #F472B6);
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  button:hover { opacity: 0.92; }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .hero {
+    background: linear-gradient(160deg, #3D1730 0%, var(--card) 60%);
+    border: 1px solid #4A1F3A;
+    border-radius: 24px;
+    padding: 26px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .hero .label {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .hero .big { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .hero .big .num { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; }
+  .hero .arrow { width: 28px; height: 28px; flex-shrink: 0; }
+  .hero .sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 18px; }
+  .hero .sub .pct { font-weight: 700; }
+  .hero .sub .pct.pos { color: var(--green); }
+  .hero .sub .pct.neg { color: var(--red); }
+
+  .hero select { margin-bottom: 10px; border-color: rgba(236, 72, 153, 0.4); }
+  .hero select:focus { border-color: var(--pink); }
+  .hero select:last-of-type { margin-bottom: 18px; }
+
+  .chart-wrap { position: relative; }
+  canvas { width: 100%; height: 240px; display: block; }
+  .month-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+  .month-labels span {
+    font-size: 0.6rem;
+    color: var(--muted);
+    transform: rotate(-40deg);
+    transform-origin: top left;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  .empty { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 20px 0; }
+
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .item .info .name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .item .info .prices { font-size: 0.8rem; color: var(--muted); }
+  .item .right { text-align: right; display: flex; align-items: center; gap: 10px; }
+  .item .margin { font-weight: 800; font-size: 1rem; }
+  .item .margin.pos { color: var(--green); }
+  .item .margin.neg { color: var(--red); }
+  .item .del {
+    width: auto;
+    padding: 6px 10px;
+    margin: 0;
+    background: #3A1F2E;
+    color: var(--red);
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  .auth-card {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .auth-tabs { display: flex; gap: 6px; background: #1F1219; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+  .auth-tab-btn {
+    width: auto; flex: 1; margin: 0; padding: 9px; font-size: 0.85rem; font-weight: 600;
+    background: transparent; color: var(--muted); border-radius: 7px;
+  }
+  .auth-tab-btn.active { background: linear-gradient(90deg, var(--pink), #F472B6); color: white; }
+  .auth-error { color: var(--red); font-size: 0.85rem; margin-top: 10px; text-align: center; }
+  .auth-info { color: var(--green); font-size: 0.85rem; margin-top: 10px; text-align: center; }
+  .logout { text-align: center; margin-top: 20px; }
+  .logout a { color: var(--muted); font-size: 0.8rem; text-decoration: none; cursor: pointer; }
+  .logout a:hover { color: var(--text); }
+  .user-badge { text-align: center; color: var(--muted); font-size: 0.8rem; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="logo">BAKIPROFIT</div>
+  <div class="tagline">Suivi des achats/reventes & bénéfices</div>
+
+  <!-- Écran de connexion / inscription -->
+  <div class="auth-card" id="authCard">
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tabLoginBtn">Connexion</button>
+      <button class="auth-tab-btn" id="tabSignupBtn">Inscription</button>
+    </div>
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+    <div style="height:10px;"></div>
+    <input type="password" id="authPassword" placeholder="Mot de passe" autocomplete="current-password">
+    <div style="height:10px;"></div>
+    <input type="text" id="authInviteCode" placeholder="Code d'invitation" style="display:none;">
+    <div style="height:14px;"></div>
+    <button id="authSubmitBtn">Se connecter</button>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-info" id="authInfo"></div>
+  </div>
+
+  <div id="mainAppContent" style="display:none;">
+    <div class="user-badge" id="userBadge"></div>
+
+    <div class="hero">
+      <div class="label" id="heroLabel">Bénéfice</div>
+      <div class="big">
+        <div class="num" id="heroProfit">0€</div>
+        <svg class="arrow" id="heroArrow" viewBox="0 0 24 24" fill="none">
+          <path d="M6 18L18 6M18 6H9M18 6V15" stroke="#34D399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct" id="heroPct">+0%</span></div>
+
+      <select id="metricSelect">
+        <option value="profit">Bénéfice</option>
+        <option value="buy">Prix d'achat</option>
+        <option value="sell">Prix de revente</option>
+      </select>
+
+      <select id="periodSelect">
+        <option value="12">12 derniers mois</option>
+        <option value="6">6 derniers mois</option>
+        <option value="3">3 derniers mois</option>
+        <option value="all">Depuis le début</option>
+      </select>
+
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+        <div class="month-labels" id="monthLabels"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ajouter un article</h2>
+      <div class="row-2">
+        <div class="field">
+          <label>Nom (achat)</label>
+          <input type="text" id="buyName" placeholder="ex: Robe Zara">
+        </div>
+        <div class="field">
+          <label>Prix d'achat</label>
+          <input type="number" id="buyPrice" placeholder="0" step="0.01">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Nom (revente)</label>
+          <input type="text" id="sellName" placeholder="ex: Robe Zara">
+        </div>
+        <div class="field">
+          <label>Prix de revente</label>
+          <input type="number" id="sellPrice" placeholder="0" step="0.01">
+        </div>
+      </div>
+      <button id="addBtn">Ajouter l'article</button>
+    </div>
+
+    <div class="card">
+      <h2>Historique</h2>
+      <div id="itemsList"></div>
+    </div>
+
+    <div class="logout"><a id="logoutLink">Se déconnecter</a></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://coymtzrxybjdpyeuxaaa.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveW10enJ4eWJqZHB5ZXV4YWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTUyNzMsImV4cCI6MjEwMjc5MTI3M30.fwSuQ0IivdFP88fQktqSDY-VbZQ-SqyQ2yT7CdPk0lQ";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const authCard = document.getElementById('authCard');
+  const mainAppContent = document.getElementById('mainAppContent');
+  const authEmail = document.getElementById('authEmail');
+  const authPassword = document.getElementById('authPassword');
+  const authError = document.getElementById('authError');
+  const authInfo = document.getElementById('authInfo');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+  const tabLoginBtn = document.getElementById('tabLoginBtn');
+  const tabSignupBtn = document.getElementById('tabSignupBtn');
+  let authMode = 'login';
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    tabLoginBtn.classList.toggle('active', mode === 'login');
+    tabSignupBtn.classList.toggle('active', mode === 'signup');
+    authSubmitBtn.textContent = mode === 'login' ? 'Se connecter' : 'Créer mon compte';
+    document.getElementById('authInviteCode').style.display = mode === 'signup' ? 'block' : 'none';
+    authError.textContent = '';
+    authInfo.textContent = '';
+  }
+  tabLoginBtn.addEventListener('click', () => setAuthMode('login'));
+  tabSignupBtn.addEventListener('click', () => setAuthMode('signup'));
+
+  const INVITE_CODE = "bakigen2026";
+
+  authSubmitBtn.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    authError.textContent = '';
+    authInfo.textContent = '';
+    if (!email || !password) {
+      authError.textContent = 'Remplis email et mot de passe.';
+      return;
+    }
+    if (authMode === 'signup') {
+      const inviteCode = document.getElementById('authInviteCode').value.trim();
+      if (inviteCode !== INVITE_CODE) {
+        authError.textContent = 'Code d\'invitation incorrect.';
+        return;
+      }
+    }
+    authSubmitBtn.disabled = true;
+    try {
+      if (authMode === 'login') {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) throw error;
+        authInfo.textContent = 'Compte créé ! Vérifie ta boîte mail si une confirmation est requise, sinon tu es déjà connecté.';
+      }
+    } catch (err) {
+      authError.textContent = err.message || 'Une erreur est survenue.';
+    } finally {
+      authSubmitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('logoutLink').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+  });
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      authCard.style.display = 'none';
+      mainAppContent.style.display = 'block';
+      document.getElementById('userBadge').textContent = 'Connecté : ' + session.user.email;
+      render();
+    } else {
+      authCard.style.display = 'block';
+      mainAppContent.style.display = 'none';
+    }
+  });
+
+  // ---- Données ----
+  async function getItems() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return [];
+    const { data, error } = await supabaseClient
+      .from('items')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data.map(row => ({
+      id: row.id,
+      buyName: row.buy_name,
+      buyPrice: Number(row.buy_price),
+      sellName: row.sell_name,
+      sellPrice: Number(row.sell_price),
+      date: row.created_at
+    }));
+  }
+  async function addItem(item) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    const { error } = await supabaseClient.from('items').insert({
+      user_id: session.user.id,
+      buy_name: item.buyName,
+      buy_price: item.buyPrice,
+      sell_name: item.sellName,
+      sell_price: item.sellPrice
+    });
+    if (error) console.error(error);
+  }
+  async function deleteItem(id) {
+    const { error } = await supabaseClient.from('items').delete().eq('id', id);
+    if (error) console.error(error);
+  }
+
+  function fmt(n) {
+    const sign = n < 0 ? '-' : '';
+    return sign + Math.abs(n).toFixed(2).replace(/\.00$/, '') + '€';
+  }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+  }
+
+  const MONTH_SHORT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  let periodMonths = 12;
+  let metric = 'profit';
+  const METRIC_LABELS = { profit: 'Bénéfice', buy: 'Prix d\'achat', sell: 'Prix de revente' };
+
+  async function render() {
+    const items = await getItems();
+
+    const list = document.getElementById('itemsList');
+    if (items.length === 0) {
+      list.innerHTML = '<div class="empty">Aucun article pour l\'instant.</div>';
+    } else {
+      list.innerHTML = items.slice().reverse().map((item) => {
+        const margin = item.sellPrice - item.buyPrice;
+        const cls = margin >= 0 ? 'pos' : 'neg';
+        return `
+          <div class="item">
+            <div class="info">
+              <div class="name">${escapeHtml(item.sellName || item.buyName)}</div>
+              <div class="prices">Achat: ${fmt(item.buyPrice)} → Revente: ${fmt(item.sellPrice)}</div>
+            </div>
+            <div class="right">
+              <div class="margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
+              <button class="del" data-id="${item.id}">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      list.querySelectorAll('.del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await deleteItem(btn.dataset.id);
+          render();
+        });
+      });
+    }
+
+    drawHero(items);
+  }
+
+  function monthsRange(n) {
+    const now = new Date();
+    const keys = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    }
+    return keys;
+  }
+
+  function drawHero(items) {
+    const byMonth = {};
+    items.forEach(item => {
+      const d = item.date ? new Date(item.date) : new Date();
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      let value;
+      if (metric === 'buy') value = item.buyPrice;
+      else if (metric === 'sell') value = item.sellPrice;
+      else value = item.sellPrice - item.buyPrice;
+      byMonth[key] = (byMonth[key] || 0) + value;
+    });
+
+    let keys;
+    if (periodMonths === 'all') {
+      keys = Object.keys(byMonth).sort();
+      if (keys.length === 0) keys = monthsRange(12);
+    } else {
+      keys = monthsRange(periodMonths);
+    }
+
+    const values = keys.map(k => byMonth[k] || 0);
+    const labels = keys.map(k => {
+      const [y, m] = k.split('-');
+      return MONTH_SHORT[parseInt(m) - 1] + ' ' + y;
+    });
+
+    const currentTotal = values.reduce((s, v) => s + v, 0);
+
+    const prevKeys = [];
+    const n = keys.length;
+    const firstKeyDate = new Date(keys[0] + '-01');
+    for (let i = n; i >= 1; i--) {
+      const d = new Date(firstKeyDate.getFullYear(), firstKeyDate.getMonth() - i, 1);
+      prevKeys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    }
+    const prevTotal = prevKeys.reduce((s, k) => s + (byMonth[k] || 0), 0);
+    const pct = prevTotal !== 0
+      ? ((currentTotal - prevTotal) / Math.abs(prevTotal)) * 100
+      : (currentTotal !== 0 ? 100 : 0);
+
+    const heroProfitEl = document.getElementById('heroProfit');
+    const showSign = metric === 'profit';
+    heroProfitEl.textContent = (showSign && currentTotal >= 0 ? '+' : '') + fmt(currentTotal);
+
+    const arrowEl = document.getElementById('heroArrow');
+    const arrowPath = arrowEl.querySelector('path');
+    arrowPath.setAttribute('stroke', pct >= 0 ? '#34D399' : '#F87171');
+    arrowEl.style.transform = pct >= 0 ? 'none' : 'scaleY(-1)';
+
+    const pctEl = document.getElementById('heroPct');
+    pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+    pctEl.className = 'pct ' + (pct >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('heroPeriodLabel').textContent = periodMonths === 'all' ? 'Depuis le début' : periodMonths + ' derniers mois';
+    document.getElementById('heroLabel').textContent = METRIC_LABELS[metric];
+
+    drawChart(values, labels);
+  }
+
+  function drawChart(values, labels) {
+    const canvas = document.getElementById('chart');
+    const labelsWrap = document.getElementById('monthLabels');
+    const ctx = canvas.getContext('2d');
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const h = 240;
+    canvas.width = rect.width * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const padLeft = 46;
+    const padRight = 8;
+    const padTop = 12;
+    const padBottom = 8;
+    ctx.clearRect(0, 0, w, h);
+    const chartH = h - padTop - padBottom;
+    const chartW = w - padLeft - padRight;
+
+    const dataMax = Math.max(...values, 0);
+    const dataMin = Math.min(...values, 0);
+    const rangeSpan = Math.max(dataMax - dataMin, 1);
+
+    function yFor(v) {
+      return padTop + chartH - ((v - dataMin) / rangeSpan) * chartH;
+    }
+    const zeroY = yFor(0);
+
+    const gridSteps = 4;
+    ctx.font = '10px sans-serif';
+    for (let i = 0; i <= gridSteps; i++) {
+      const v = dataMin + (rangeSpan * i / gridSteps);
+      const y = yFor(v);
+      ctx.strokeStyle = '#2E1B2A';
+      ctx.beginPath();
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(w - padRight, y);
+      ctx.stroke();
+      ctx.fillStyle = '#9B93B8';
+      ctx.fillText(fmt(v), 4, y + 3);
+    }
+
+    const stepX = values.length > 1 ? chartW / (values.length - 1) : 0;
+    ctx.strokeStyle = '#251522';
+    values.forEach((v, i) => {
+      const x = padLeft + (values.length > 1 ? i * stepX : chartW / 2);
+      ctx.beginPath();
+      ctx.moveTo(x, padTop);
+      ctx.lineTo(x, h - padBottom);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = '#4A2E42';
+    ctx.beginPath();
+    ctx.moveTo(padLeft, zeroY);
+    ctx.lineTo(w - padRight, zeroY);
+    ctx.stroke();
+
+    if (values.length === 1) {
+      const x = padLeft + chartW / 2;
+      const y = yFor(values[0]);
+      ctx.fillStyle = '#EC4899';
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const points = values.map((v, i) => ({
+        x: padLeft + i * stepX,
+        y: yFor(v)
+      }));
+
+      const gradient = ctx.createLinearGradient(0, padTop, 0, h - padBottom);
+      gradient.addColorStop(0, 'rgba(236, 72, 153, 0.35)');
+      gradient.addColorStop(1, 'rgba(236, 72, 153, 0.02)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, zeroY);
+      points.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(points[points.length - 1].x, zeroY);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#EC4899';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      points.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+
+      points.forEach((p) => {
+        ctx.fillStyle = '#F9A8D4';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    labelsWrap.innerHTML = labels.map(l => `<span>${l}</span>`).join('');
+  }
+
+  document.getElementById('metricSelect').addEventListener('change', (e) => {
+    metric = e.target.value;
+    render();
+  });
+  document.getElementById('periodSelect').addEventListener('change', (e) => {
+    const v = e.target.value;
+    periodMonths = v === 'all' ? 'all' : parseInt(v);
+    render();
+  });
+
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const buyName = document.getElementById('buyName').value.trim();
+    const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+    const sellName = document.getElementById('sellName').value.trim();
+    const sellPrice = parseFloat(document.getElementById('sellPrice').value);
+
+    if (!buyName || isNaN(buyPrice) || isNaN(sellPrice)) {
+      alert('Remplis au moins le nom d\'achat, le prix d\'achat et le prix de revente.');
+      return;
+    }
+
+    await addItem({ buyName, buyPrice, sellName, sellPrice });
+
+    document.getElementById('buyName').value = '';
+    document.getElementById('buyPrice').value = '';
+    document.getElementById('sellName').value = '';
+    document.getElementById('sellPrice').value = '';
+
+    render();
+  });
+
+  window.addEventListener('resize', () => render());
+</script>
+
+</body>
+</html>
