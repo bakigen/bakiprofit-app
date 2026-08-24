@@ -94,6 +94,7 @@
     padding: 26px 22px;
     margin-bottom: 20px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    overflow: hidden;
   }
   .hero .label {
     font-size: 0.75rem;
@@ -111,18 +112,23 @@
   .hero .sub .pct.pos { color: var(--green); }
   .hero .sub .pct.neg { color: var(--red); }
 
-  .hero select { margin-bottom: 10px; border-color: rgba(236, 72, 153, 0.4); }
+  .hero select { border-color: rgba(236, 72, 153, 0.4); margin-bottom: 10px; }
   .hero select:focus { border-color: var(--pink); }
   .hero select:last-of-type { margin-bottom: 18px; }
 
-  .chart-wrap { position: relative; }
+  .chart-wrap { position: relative; overflow: hidden; }
   canvas { width: 100%; height: 240px; display: block; }
-  .month-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+  .month-labels {
+    position: relative;
+    height: 34px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
   .month-labels span {
+    position: absolute;
+    top: 0;
     font-size: 0.6rem;
     color: var(--muted);
-    transform: rotate(-40deg);
-    transform-origin: top left;
     white-space: nowrap;
     display: inline-block;
   }
@@ -220,12 +226,7 @@
         <option value="sell">Prix de revente</option>
       </select>
 
-      <select id="periodSelect">
-        <option value="12">12 derniers mois</option>
-        <option value="6">6 derniers mois</option>
-        <option value="3">3 derniers mois</option>
-        <option value="all">Depuis le début</option>
-      </select>
+      <select id="periodSelect"></select>
 
       <div class="chart-wrap">
         <canvas id="chart"></canvas>
@@ -392,9 +393,92 @@
   }
 
   const MONTH_SHORT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-  let periodMonths = 12;
+
+  const GRANULARITY_CONFIG = {
+    day:   { unitLabel: 'jours',    counts: [7, 14, 30, 90] },
+    week:  { unitLabel: 'semaines', counts: [4, 8, 12, 26] },
+    month: { unitLabel: 'mois',     counts: [3, 6, 12, 24] },
+    year:  { unitLabel: 'années',   counts: [1, 2, 3, 5] }
+  };
+  const GRANULARITY_GROUP_LABEL = { day: 'Jour', week: 'Semaine', month: 'Mois', year: 'Année' };
+
+  let granularity = 'month';
+  let periodCount = 12;
   let metric = 'profit';
   const METRIC_LABELS = { profit: 'Bénéfice', buy: 'Prix d\'achat', sell: 'Prix de revente' };
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function startOfWeek(d) {
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+  }
+
+  function keyFromDate(date, gran) {
+    if (gran === 'day') return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+    if (gran === 'week') { const s = startOfWeek(date); return s.getFullYear() + '-' + pad2(s.getMonth() + 1) + '-' + pad2(s.getDate()); }
+    if (gran === 'month') return date.getFullYear() + '-' + pad2(date.getMonth() + 1);
+    return String(date.getFullYear());
+  }
+
+  function addPeriods(date, n, gran) {
+    if (gran === 'day') return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+    if (gran === 'week') return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n * 7);
+    if (gran === 'month') return new Date(date.getFullYear(), date.getMonth() + n, 1);
+    return new Date(date.getFullYear() + n, 0, 1);
+  }
+
+  function startDateFromKey(key, gran) {
+    if (gran === 'day' || gran === 'week') return new Date(key + 'T00:00:00');
+    if (gran === 'month') { const [y, m] = key.split('-'); return new Date(parseInt(y), parseInt(m) - 1, 1); }
+    return new Date(parseInt(key), 0, 1);
+  }
+
+  function labelFromKey(key, gran) {
+    if (gran === 'day' || gran === 'week') { const d = new Date(key + 'T00:00:00'); return d.getDate() + ' ' + MONTH_SHORT[d.getMonth()]; }
+    if (gran === 'month') { const [y, m] = key.split('-'); return MONTH_SHORT[parseInt(m) - 1] + ' ' + y; }
+    return key;
+  }
+
+  function rangeKeys(n, gran) {
+    const now = new Date();
+    const nowStart = gran === 'year' ? new Date(now.getFullYear(), 0, 1)
+      : gran === 'month' ? new Date(now.getFullYear(), now.getMonth(), 1)
+      : gran === 'week' ? startOfWeek(now)
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const keys = [];
+    for (let i = n - 1; i >= 0; i--) {
+      keys.push(keyFromDate(addPeriods(nowStart, -i, gran), gran));
+    }
+    return keys;
+  }
+
+  function buildPeriodSelect() {
+    const sel = document.getElementById('periodSelect');
+    sel.innerHTML = Object.keys(GRANULARITY_GROUP_LABEL).map(gran => {
+      const cfg = GRANULARITY_CONFIG[gran];
+      const options = cfg.counts.map(c => `<option value="${gran}:${c}">${c} derniers ${cfg.unitLabel}</option>`).join('')
+        + `<option value="${gran}:all">${cfg.unitLabel} — depuis le début</option>`;
+      return `<optgroup label="${GRANULARITY_GROUP_LABEL[gran]}">${options}</optgroup>`;
+    }).join('');
+    sel.value = 'month:12';
+    granularity = 'month';
+    periodCount = 12;
+  }
+
+  document.getElementById('periodSelect').addEventListener('change', (e) => {
+    const [gran, val] = e.target.value.split(':');
+    granularity = gran;
+    periodCount = val === 'all' ? 'all' : parseInt(val);
+    render();
+  });
+  document.getElementById('metricSelect').addEventListener('change', (e) => {
+    metric = e.target.value;
+    render();
+  });
+
+  buildPeriodSelect();
 
   async function render() {
     const items = await getItems();
@@ -430,52 +514,38 @@
     drawHero(items);
   }
 
-  function monthsRange(n) {
-    const now = new Date();
-    const keys = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
-    }
-    return keys;
-  }
-
   function drawHero(items) {
-    const byMonth = {};
+    const byPeriod = {};
     items.forEach(item => {
       const d = item.date ? new Date(item.date) : new Date();
-      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const key = keyFromDate(d, granularity);
       let value;
       if (metric === 'buy') value = item.buyPrice;
       else if (metric === 'sell') value = item.sellPrice;
       else value = item.sellPrice - item.buyPrice;
-      byMonth[key] = (byMonth[key] || 0) + value;
+      byPeriod[key] = (byPeriod[key] || 0) + value;
     });
 
     let keys;
-    if (periodMonths === 'all') {
-      keys = Object.keys(byMonth).sort();
-      if (keys.length === 0) keys = monthsRange(12);
+    if (periodCount === 'all') {
+      keys = Object.keys(byPeriod).sort();
+      if (keys.length === 0) keys = rangeKeys(GRANULARITY_CONFIG[granularity].counts[2], granularity);
     } else {
-      keys = monthsRange(periodMonths);
+      keys = rangeKeys(periodCount, granularity);
     }
 
-    const values = keys.map(k => byMonth[k] || 0);
-    const labels = keys.map(k => {
-      const [y, m] = k.split('-');
-      return MONTH_SHORT[parseInt(m) - 1] + ' ' + y;
-    });
+    const values = keys.map(k => byPeriod[k] || 0);
+    const labels = keys.map(k => labelFromKey(k, granularity));
 
     const currentTotal = values.reduce((s, v) => s + v, 0);
 
-    const prevKeys = [];
     const n = keys.length;
-    const firstKeyDate = new Date(keys[0] + '-01');
+    const firstStart = startDateFromKey(keys[0], granularity);
+    const prevKeys = [];
     for (let i = n; i >= 1; i--) {
-      const d = new Date(firstKeyDate.getFullYear(), firstKeyDate.getMonth() - i, 1);
-      prevKeys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+      prevKeys.push(keyFromDate(addPeriods(firstStart, -i, granularity), granularity));
     }
-    const prevTotal = prevKeys.reduce((s, k) => s + (byMonth[k] || 0), 0);
+    const prevTotal = prevKeys.reduce((s, k) => s + (byPeriod[k] || 0), 0);
     const pct = prevTotal !== 0
       ? ((currentTotal - prevTotal) / Math.abs(prevTotal)) * 100
       : (currentTotal !== 0 ? 100 : 0);
@@ -493,7 +563,8 @@
     pctEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
     pctEl.className = 'pct ' + (pct >= 0 ? 'pos' : 'neg');
 
-    document.getElementById('heroPeriodLabel').textContent = periodMonths === 'all' ? 'Depuis le début' : periodMonths + ' derniers mois';
+    const cfg = GRANULARITY_CONFIG[granularity];
+    document.getElementById('heroPeriodLabel').textContent = periodCount === 'all' ? 'Depuis le début' : `${periodCount} derniers ${cfg.unitLabel}`;
     document.getElementById('heroLabel').textContent = METRIC_LABELS[metric];
 
     drawChart(values, labels);
@@ -601,18 +672,36 @@
       });
     }
 
-    labelsWrap.innerHTML = labels.map(l => `<span>${l}</span>`).join('');
+    labelsWrap.innerHTML = '';
+    const n = labels.length;
+    const maxLabels = 8;
+    const step = Math.max(1, Math.ceil(n / maxLabels));
+    labels.forEach((l, i) => {
+      const isLast = i === n - 1;
+      if (i % step !== 0 && !isLast) return;
+      const x = n > 1 ? padLeft + i * stepX : padLeft + chartW / 2;
+      const span = document.createElement('span');
+      span.textContent = l;
+      let transform, origin, leftPx;
+      if (i === 0) {
+        transform = 'rotate(-40deg)';
+        origin = 'top left';
+        leftPx = x;
+      } else if (isLast) {
+        transform = 'translateX(-100%) rotate(-40deg)';
+        origin = 'top right';
+        leftPx = x;
+      } else {
+        transform = 'translateX(-50%) rotate(-40deg)';
+        origin = 'top center';
+        leftPx = x;
+      }
+      span.style.left = leftPx + 'px';
+      span.style.transform = transform;
+      span.style.transformOrigin = origin;
+      labelsWrap.appendChild(span);
+    });
   }
-
-  document.getElementById('metricSelect').addEventListener('change', (e) => {
-    metric = e.target.value;
-    render();
-  });
-  document.getElementById('periodSelect').addEventListener('change', (e) => {
-    const v = e.target.value;
-    periodMonths = v === 'all' ? 'all' : parseInt(v);
-    render();
-  });
 
   document.getElementById('addBtn').addEventListener('click', async () => {
     const buyName = document.getElementById('buyName').value.trim();
