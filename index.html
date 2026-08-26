@@ -593,9 +593,9 @@
   const MONTH_SHORT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
 
   const GRANULARITY_CONFIG = {
-    day:   { unitLabel: 'jours',    counts: [7, 14, 30, 90] },
-    week:  { unitLabel: 'semaines', counts: [4, 8, 12, 26] },
-    month: { unitLabel: 'mois',     counts: [3, 6, 12, 24] },
+    day:   { unitLabel: 'jours',    counts: [7] },
+    week:  { unitLabel: 'semaines', counts: [1, 2, 3, 4] },
+    month: { unitLabel: 'mois',     counts: [12] },
     year:  { unitLabel: 'années',   counts: [1, 2, 3, 5] }
   };
   const GRANULARITY_GROUP_LABEL = { day: 'Jour', week: 'Semaine', month: 'Mois', year: 'Année' };
@@ -727,7 +727,10 @@
     let keys;
     if (periodCount === 'all') {
       keys = Object.keys(byPeriod).sort();
-      if (keys.length === 0) keys = rangeKeys(GRANULARITY_CONFIG[granularity].counts[2], granularity);
+      if (keys.length === 0) {
+        const cfgCounts = GRANULARITY_CONFIG[granularity].counts;
+        keys = rangeKeys(cfgCounts[cfgCounts.length - 1], granularity);
+      }
     } else {
       keys = rangeKeys(periodCount, granularity);
     }
@@ -873,16 +876,35 @@
     // ---- Labels sous le graphique : toujours contenus dans la largeur du canvas ----
     labelsWrap.innerHTML = '';
     const n = labels.length;
-    const maxLabels = 8;
+    // Largeur horizontale approximative occupée par un libellé incliné (ex: "Août 2026")
+    const estLabelPx = 56;
+    const maxLabels = Math.max(2, Math.floor(chartW / estLabelPx));
     const step = Math.max(1, Math.ceil(n / maxLabels));
-    labels.forEach((l, i) => {
+
+    // Sélection des index à afficher, en garantissant un espacement régulier
+    let indices = [];
+    for (let i = 0; i < n; i += step) indices.push(i);
+    if (indices[indices.length - 1] !== n - 1) {
+      indices.push(n - 1);
+    }
+    // Si le dernier index forcé est trop proche du précédent, on retire ce dernier
+    // pour éviter que les deux libellés ne se chevauchent
+    if (indices.length > 2) {
+      const gapPx = stepX * (indices[indices.length - 1] - indices[indices.length - 2]);
+      if (gapPx < estLabelPx * 0.75) {
+        indices.splice(indices.length - 2, 1);
+      }
+    }
+
+    indices.forEach((i) => {
+      const isFirst = i === 0;
       const isLast = i === n - 1;
-      if (i % step !== 0 && !isLast) return;
+      const l = labels[i];
       const x = n > 1 ? padLeft + i * stepX : padLeft + chartW / 2;
       const span = document.createElement('span');
       span.textContent = l;
       let transform, origin, leftPx;
-      if (i === 0) {
+      if (isFirst) {
         transform = 'rotate(-40deg)';
         origin = 'top left';
         leftPx = x;
