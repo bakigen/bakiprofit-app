@@ -656,8 +656,10 @@
     const sel = document.getElementById('periodSelect');
     sel.innerHTML = Object.keys(GRANULARITY_GROUP_LABEL).map(gran => {
       const cfg = GRANULARITY_CONFIG[gran];
-      const options = cfg.counts.map(c => `<option value="${gran}:${c}">${c} derniers ${cfg.unitLabel}</option>`).join('')
-        + `<option value="${gran}:all">${cfg.unitLabel} — depuis le début</option>`;
+      let options = cfg.counts.map(c => `<option value="${gran}:${c}">${c} derniers ${cfg.unitLabel}</option>`).join('');
+      if (gran === 'year') {
+        options += `<option value="${gran}:all">${cfg.unitLabel} — depuis le début</option>`;
+      }
       return `<optgroup label="${GRANULARITY_GROUP_LABEL[gran]}">${options}</optgroup>`;
     }).join('');
     sel.value = 'month:12';
