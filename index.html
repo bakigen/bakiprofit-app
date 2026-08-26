@@ -717,16 +717,18 @@
     drawHero(items);
   }
 
-  // Pour la vue "semaine" et "mois en cours", on affiche une courbe jour par jour
-  // (plus lisible qu'un seul point) : la granularité de calcul devient "day".
+  // Pour "semaine", "mois en cours" et "année", on affiche une courbe plus fine
+  // (jour ou mois) plutôt qu'un seul point global.
   function effectiveGranularity() {
     if (granularity === 'week') return 'day';
     if (granularity === 'month' && periodCount === 'current') return 'day';
+    if (granularity === 'year') return 'month';
     return granularity;
   }
   function effectivePeriodCount() {
     if (granularity === 'week') return periodCount === 'all' ? 'all' : periodCount * 7;
     if (granularity === 'month' && periodCount === 'current') return new Date().getDate();
+    if (granularity === 'year') return periodCount === 'all' ? 'all' : periodCount * 12;
     return periodCount;
   }
 
@@ -750,7 +752,8 @@
       keys = Object.keys(byPeriod).sort();
       if (keys.length === 0) {
         const cfgCounts = GRANULARITY_CONFIG[granularity].counts;
-        keys = rangeKeys(cfgCounts[cfgCounts.length - 1], eGran);
+        const fallbackCount = cfgCounts[cfgCounts.length - 1] * (granularity === 'year' ? 12 : 1);
+        keys = rangeKeys(fallbackCount, eGran);
       }
     } else {
       keys = rangeKeys(ePeriodCount, eGran);
