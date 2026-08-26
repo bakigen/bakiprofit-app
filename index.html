@@ -657,6 +657,9 @@
     sel.innerHTML = Object.keys(GRANULARITY_GROUP_LABEL).map(gran => {
       const cfg = GRANULARITY_CONFIG[gran];
       let options = cfg.counts.map(c => `<option value="${gran}:${c}">${c} derniers ${cfg.unitLabel}</option>`).join('');
+      if (gran === 'month') {
+        options += `<option value="month:current">Mois en cours</option>`;
+      }
       if (gran === 'year') {
         options += `<option value="${gran}:all">${cfg.unitLabel} — depuis le début</option>`;
       }
@@ -670,7 +673,7 @@
   document.getElementById('periodSelect').addEventListener('change', (e) => {
     const [gran, val] = e.target.value.split(':');
     granularity = gran;
-    periodCount = val === 'all' ? 'all' : parseInt(val);
+    periodCount = (val === 'all' || val === 'current') ? val : parseInt(val);
     render();
   });
   document.getElementById('metricSelect').addEventListener('change', (e) => {
@@ -714,11 +717,27 @@
     drawHero(items);
   }
 
+  // Pour la vue "semaine" et "mois en cours", on affiche une courbe jour par jour
+  // (plus lisible qu'un seul point) : la granularité de calcul devient "day".
+  function effectiveGranularity() {
+    if (granularity === 'week') return 'day';
+    if (granularity === 'month' && periodCount === 'current') return 'day';
+    return granularity;
+  }
+  function effectivePeriodCount() {
+    if (granularity === 'week') return periodCount === 'all' ? 'all' : periodCount * 7;
+    if (granularity === 'month' && periodCount === 'current') return new Date().getDate();
+    return periodCount;
+  }
+
   function drawHero(items) {
+    const eGran = effectiveGranularity();
+    const ePeriodCount = effectivePeriodCount();
+
     const byPeriod = {};
     items.forEach(item => {
       const d = item.date ? new Date(item.date) : new Date();
-      const key = keyFromDate(d, granularity);
+      const key = keyFromDate(d, eGran);
       let value;
       if (metric === 'buy') value = item.buyPrice;
       else if (metric === 'sell') value = item.sellPrice;
@@ -727,26 +746,26 @@
     });
 
     let keys;
-    if (periodCount === 'all') {
+    if (ePeriodCount === 'all') {
       keys = Object.keys(byPeriod).sort();
       if (keys.length === 0) {
         const cfgCounts = GRANULARITY_CONFIG[granularity].counts;
-        keys = rangeKeys(cfgCounts[cfgCounts.length - 1], granularity);
+        keys = rangeKeys(cfgCounts[cfgCounts.length - 1], eGran);
       }
     } else {
-      keys = rangeKeys(periodCount, granularity);
+      keys = rangeKeys(ePeriodCount, eGran);
     }
 
     const values = keys.map(k => byPeriod[k] || 0);
-    const labels = keys.map(k => labelFromKey(k, granularity));
+    const labels = keys.map(k => labelFromKey(k, eGran));
 
     const currentTotal = values.reduce((s, v) => s + v, 0);
 
     const n = keys.length;
-    const firstStart = startDateFromKey(keys[0], granularity);
+    const firstStart = startDateFromKey(keys[0], eGran);
     const prevKeys = [];
     for (let i = n; i >= 1; i--) {
-      prevKeys.push(keyFromDate(addPeriods(firstStart, -i, granularity), granularity));
+      prevKeys.push(keyFromDate(addPeriods(firstStart, -i, eGran), eGran));
     }
     const prevTotal = prevKeys.reduce((s, k) => s + (byPeriod[k] || 0), 0);
     const pct = prevTotal !== 0
@@ -767,7 +786,11 @@
     pctEl.className = 'pct ' + (pct >= 0 ? 'pos' : 'neg');
 
     const cfg = GRANULARITY_CONFIG[granularity];
-    document.getElementById('heroPeriodLabel').textContent = periodCount === 'all' ? 'Depuis le début' : `${periodCount} derniers ${cfg.unitLabel}`;
+    document.getElementById('heroPeriodLabel').textContent = periodCount === 'all'
+      ? 'Depuis le début'
+      : periodCount === 'current'
+        ? 'Mois en cours'
+        : `${periodCount} derniers ${cfg.unitLabel}`;
     document.getElementById('heroLabel').textContent = METRIC_LABELS[metric];
 
     drawChart(values, labels);
