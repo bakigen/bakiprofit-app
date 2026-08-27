@@ -150,20 +150,19 @@
   .mock-form { display: flex; gap: 8px; margin-bottom: 8px; }
   .mock-form .mfield { flex: 1; background: #1F1219; border: 1px solid #4A2E42; border-radius: 10px; padding: 10px 12px; font-size: 0.78rem; color: var(--muted); }
 
-  .cta-scroll {
+  .cta-scroll-text {
     display: block;
     text-align: center;
     width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(90deg, var(--pink), var(--green));
-    color: #0a0a0a;
-    font-weight: 800;
-    font-size: 0.95rem;
+    padding: 6px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
     margin-top: 4px;
+    text-decoration: underline;
   }
+  .cta-scroll-text:hover { color: var(--pink); }
 
   .card {
     background: var(--card);
@@ -385,6 +384,7 @@
   .product-card .pc-prices { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; }
   .product-card .pc-prices .pc-buy { color: var(--muted); }
   .product-card .pc-prices .pc-sell { color: var(--green); font-weight: 700; }
+  .product-card .pc-date { font-size: 0.68rem; color: var(--muted); margin-bottom: 8px; }
   .product-card a.pc-link {
     display: block;
     text-align: center;
@@ -432,7 +432,7 @@
   <div class="logo">BAKIPROFIT</div>
   <div class="tagline">Suivi des achats/reventes & bénéfices</div>
 
-  <div class="quick-auth-row">
+  <div class="quick-auth-row" id="quickAuthRow">
     <button type="button" class="quick-auth-btn" id="quickLoginBtn">Connexion</button>
     <button type="button" class="quick-auth-btn" id="quickSignupBtn">Inscription</button>
   </div>
@@ -571,7 +571,7 @@
       <a href="https://instagram.com/bakiprofitgen" target="_blank" style="color:var(--pink); font-weight:700; text-decoration:none; font-size:0.95rem;">📷 @bakiprofitgen</a>
     </div>
 
-    <button class="cta-scroll" id="ctaToAuth">Accéder à mon espace →</button>
+    <p class="cta-scroll-text" id="ctaToAuth">Accéder à mon espace</p>
   </div>
 
   <!-- Écran de connexion / inscription -->
@@ -1076,6 +1076,7 @@
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
           <div class="pc-title">${p.title}</div>
+          <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
           <div class="pc-prices">
             <span class="pc-buy">Achat: ${p.buy_price}€</span> →
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
@@ -1216,6 +1217,7 @@
       // L'utilisateur a cliqué sur le lien reçu par email : on affiche l'écran dédié,
       // peu importe le reste, tant qu'il n'a pas choisi un nouveau mot de passe.
       landingBlock.style.display = 'none';
+      document.getElementById('quickAuthRow').style.display = 'none';
       authCard.style.display = 'none';
       mainAppContent.style.display = 'none';
       document.getElementById('forceChangeCard').style.display = 'none';
@@ -1231,6 +1233,7 @@
       if (mustChange) return;
 
       landingBlock.style.display = 'none';
+      document.getElementById('quickAuthRow').style.display = 'none';
       authCard.style.display = 'none';
       document.getElementById('resetCard').style.display = 'none';
       document.getElementById('forceChangeCard').style.display = 'none';
@@ -1238,6 +1241,7 @@
       render();
     } else {
       landingBlock.style.display = 'block';
+      document.getElementById('quickAuthRow').style.display = 'flex';
       authCard.style.display = 'block';
       document.getElementById('resetCard').style.display = 'none';
       document.getElementById('forceChangeCard').style.display = 'none';
