@@ -756,6 +756,25 @@
   }
   .comm-table td.amount { color: var(--green); font-weight: 700; }
 
+  .affiliate-motivation {
+    background: linear-gradient(135deg, rgba(247,55,156,0.14), rgba(139,214,41,0.10));
+    border: 1px solid #3A2438;
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .affiliate-motivation .am-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--green);
+    margin-bottom: 2px;
+  }
+  .affiliate-motivation .am-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
   .formation-placeholder {
     text-align: center;
     color: var(--muted);
@@ -1633,6 +1652,8 @@
     </div>
 
     <div class="tab-panel" id="tab-affiliations">
+      <div class="affiliate-motivation" id="affiliateMotivation" style="display:none;"></div>
+
       <div class="card" id="adminCommissionCard" style="display:none;">
         <h2>Ajouter une commission</h2>
         <div class="field">
@@ -2126,6 +2147,7 @@
   async function loadCommissions() {
     const listEl = document.getElementById('commissionsList');
     const totalEl = document.getElementById('commissionsTotal');
+    const motivationEl = document.getElementById('affiliateMotivation');
 
     document.getElementById('adminCommissionCard').style.display =
       (currentUserEmail === ADMIN_EMAIL) ? 'block' : 'none';
@@ -2138,6 +2160,7 @@
     if (error || !data || data.length === 0) {
       listEl.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:20px 8px;">Aucune commission pour le moment</td></tr>';
       totalEl.textContent = '';
+      motivationEl.style.display = 'none';
       return;
     }
 
@@ -2153,6 +2176,13 @@
 
     const total = data.reduce((s, c) => s + Number(c.amount), 0);
     totalEl.textContent = 'Total : ' + total + '€';
+
+    motivationEl.style.display = 'block';
+    const count = data.length;
+    motivationEl.innerHTML = `
+      <div class="am-amount">🎉 +${total}€ générés</div>
+      <div class="am-sub">grâce à ${count} parrainage${count > 1 ? 's' : ''} déjà validé${count > 1 ? 's' : ''} — continue comme ça !</div>
+    `;
   }
 
   const commAddBtn = document.getElementById('commAddBtn');
