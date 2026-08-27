@@ -1458,6 +1458,10 @@
       <input type="password" id="authPassword" placeholder="Mot de passe" autocomplete="current-password">
       <button type="button" class="password-toggle-btn" id="authPasswordToggle">👁️</button>
     </div>
+    <div class="password-field-wrap" id="authPasswordConfirmWrap" style="display:none; margin-top:10px;">
+      <input type="password" id="authPasswordConfirm" placeholder="Confirme le mot de passe" autocomplete="new-password">
+      <button type="button" class="password-toggle-btn" id="authPasswordConfirmToggle">👁️</button>
+    </div>
     <div class="auth-forgot" id="authForgotWrap">
       <a id="forgotPasswordLink">Mot de passe oublié ?</a>
     </div>
@@ -2012,6 +2016,7 @@
     tabSignupBtn.classList.toggle('active', mode === 'signup');
     authSubmitBtn.textContent = mode === 'login' ? 'Se connecter' : 'Créer mon compte';
     document.getElementById('authInviteCode').style.display = mode === 'signup' ? 'block' : 'none';
+    document.getElementById('authPasswordConfirmWrap').style.display = mode === 'signup' ? 'flex' : 'none';
     document.getElementById('authForgotWrap').style.display = mode === 'login' ? 'block' : 'none';
     authError.textContent = '';
     authInfo.textContent = '';
@@ -2067,6 +2072,11 @@
       return;
     }
     if (authMode === 'signup') {
+      const passwordConfirm = document.getElementById('authPasswordConfirm').value;
+      if (password !== passwordConfirm) {
+        authError.textContent = 'Les deux mots de passe ne correspondent pas.';
+        return;
+      }
       const inviteCode = document.getElementById('authInviteCode').value.trim();
       if (inviteCode !== INVITE_CODE) {
         authError.textContent = 'Code d\'invitation incorrect.';
@@ -2096,9 +2106,15 @@
     authPassword.type = isHidden ? 'text' : 'password';
     document.getElementById('authPasswordToggle').textContent = isHidden ? '🙈' : '👁️';
   });
+  document.getElementById('authPasswordConfirmToggle').addEventListener('click', () => {
+    const confirmInput = document.getElementById('authPasswordConfirm');
+    const isHidden = confirmInput.type === 'password';
+    confirmInput.type = isHidden ? 'text' : 'password';
+    document.getElementById('authPasswordConfirmToggle').textContent = isHidden ? '🙈' : '👁️';
+  });
 
   // ---- Validation au clavier (touche Entrée) ----
-  [authEmail, authPassword].forEach(input => {
+  [authEmail, authPassword, document.getElementById('authPasswordConfirm')].forEach(input => {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
