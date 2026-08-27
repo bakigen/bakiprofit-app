@@ -427,18 +427,45 @@
       <p>Voici à quoi ressemble ton espace une fois connecté.</p>
 
       <div class="mock-title">Le suivi du bénéfice</div>
-      <div class="mock-hero">
-        <div class="mlabel">Bénéfice</div>
-        <div class="mbig">+284€</div>
-        <div class="msub">12 derniers mois <span style="color:var(--green);font-weight:700;">+18.4%</span></div>
-        <div class="mock-bars">
-          <span style="height:35%;"></span>
-          <span style="height:55%;"></span>
-          <span style="height:40%;"></span>
-          <span style="height:70%;"></span>
-          <span style="height:60%;"></span>
-          <span style="height:90%;"></span>
-          <span style="height:75%;"></span>
+      <div class="hero" style="padding:20px 18px; margin-bottom:14px;">
+        <div class="label">Bénéfice</div>
+        <div class="big">
+          <div class="num">+284€</div>
+          <svg class="arrow" viewBox="0 0 24 24" fill="none">
+            <path d="M6 18L18 6M18 6H9M18 6V15" stroke="#8BD629" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="sub">12 derniers mois <span class="pct pos">+18.4%</span></div>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 300 130" width="100%" height="150" style="display:block;">
+            <defs>
+              <linearGradient id="mockGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#F7379C" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#F7379C" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <line x1="26" y1="8" x2="300" y2="8" stroke="#2E1B2A" stroke-width="1"/>
+            <line x1="26" y1="40" x2="300" y2="40" stroke="#2E1B2A" stroke-width="1"/>
+            <line x1="26" y1="72" x2="300" y2="72" stroke="#2E1B2A" stroke-width="1"/>
+            <line x1="26" y1="104" x2="300" y2="104" stroke="#4A2E42" stroke-width="1"/>
+            <path d="M26,88 L68,66 L110,80 L152,50 L194,60 L236,30 L278,42 L278,104 L26,104 Z" fill="url(#mockGrad)"/>
+            <polyline points="26,88 68,66 110,80 152,50 194,60 236,30 278,42" fill="none" stroke="#F7379C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="26" cy="88" r="4" fill="#F9A8D4"/>
+            <circle cx="68" cy="66" r="4" fill="#F9A8D4"/>
+            <circle cx="110" cy="80" r="4" fill="#F9A8D4"/>
+            <circle cx="152" cy="50" r="4" fill="#F9A8D4"/>
+            <circle cx="194" cy="60" r="4" fill="#F9A8D4"/>
+            <circle cx="236" cy="30" r="4" fill="#F9A8D4"/>
+            <circle cx="278" cy="42" r="4" fill="#F9A8D4"/>
+          </svg>
+          <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
+            <span style="font-size:0.6rem; color:var(--muted);">Mars</span>
+            <span style="font-size:0.6rem; color:var(--muted);">Mai</span>
+            <span style="font-size:0.6rem; color:var(--muted);">Juil.</span>
+            <span style="font-size:0.6rem; color:var(--muted);">Sept.</span>
+            <span style="font-size:0.6rem; color:var(--muted);">Nov.</span>
+            <span style="font-size:0.6rem; color:var(--muted);">Jan.</span>
+          </div>
         </div>
       </div>
 
@@ -467,6 +494,27 @@
         </div>
         <div class="mmargin">+25€</div>
       </div>
+    </div>
+
+    <div class="landing-section">
+      <h3>💰 Le programme d'affiliation</h3>
+      <p>En plus du suivi de tes bénéfices, ton compte BAKIPROFIT te donne accès à un onglet Affiliations : parraine tes proches et touche une commission à chaque vente réalisée grâce à toi.</p>
+      <ul class="landing-points" style="margin-top:0;">
+        <li><span class="dot">✓</span> <span><strong style="color:var(--green);">5€</strong> de commission pour chaque vente du pack seul (BAKIGEN ou BAKIPROFIT)</span></li>
+        <li><span class="dot">✓</span> <span><strong style="color:var(--green);">15€</strong> de commission pour chaque vente du pack complet</span></li>
+        <li><span class="dot">✓</span> Suivi de tes commissions directement dans ton espace</li>
+      </ul>
+    </div>
+
+    <div class="landing-section">
+      <h3>🛍️ Fiches produits disponibles</h3>
+      <p>Un onglet Produits te donne accès à un catalogue de fiches produits faciles à revendre : titre, lien d'achat, prix d'achat conseillé et prix de revente conseillé, avec photo.</p>
+      <p style="margin-bottom:0;">De nouvelles fiches sont ajoutées régulièrement pour t'aider à trouver rapidement des articles rentables à acheter et revendre.</p>
+    </div>
+
+    <div class="landing-section">
+      <h3>🎓 Formation (bientôt disponible)</h3>
+      <p style="margin-bottom:0;">Un onglet Formation est déjà présent dans ton espace : il contiendra prochainement du contenu pour t'aider à progresser dans l'achat/revente (méthodes, astuces, bonnes pratiques). Reste connecté, ça arrive bientôt 🚀</p>
     </div>
 
     <div class="landing-section">
