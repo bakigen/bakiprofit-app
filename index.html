@@ -355,6 +355,18 @@
     padding: 1px 7px;
     margin-top: 3px;
   }
+  .item-low-margin-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: #FFD166;
+    border: 1px solid #5A4416;
+    background: rgba(255, 209, 102, 0.08);
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-top: 3px;
+    margin-left: 6px;
+    font-weight: 700;
+  }
 
   .hero {
     background: linear-gradient(160deg, #3D1730 0%, var(--card) 60%);
@@ -621,6 +633,31 @@
     cursor: pointer;
   }
   .pc-fav-btn.active { color: #FFD166; }
+
+  .price-range-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .price-range-btn {
+    flex: 1;
+    min-width: 70px;
+    margin: 0;
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid #3A2438;
+    background: #1F1219;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .price-range-btn.active {
+    background: linear-gradient(90deg, var(--pink), var(--pink-deep));
+    color: white;
+    border-color: transparent;
+  }
   .product-card img {
     width: 100%;
     height: 120px;
@@ -1120,6 +1157,12 @@
               <option value="price_desc">Prix d'achat décroissant</option>
             </select>
           </div>
+        </div>
+        <div class="price-range-filter" id="priceRangeFilter">
+          <button type="button" class="price-range-btn active" data-range="all">Tous</button>
+          <button type="button" class="price-range-btn" data-range="under10">&lt; 10€</button>
+          <button type="button" class="price-range-btn" data-range="10to30">10-30€</button>
+          <button type="button" class="price-range-btn" data-range="over30">30€+</button>
         </div>
         <div class="product-grid" id="productsGrid">
           <div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Chargement...</div>
@@ -1809,6 +1852,8 @@
     applyProductsFilterAndSort();
   }
 
+  let activePriceRange = 'all';
+
   function applyProductsFilterAndSort() {
     const query = document.getElementById('prodSearchInput').value.trim().toLowerCase();
     const sortBy = document.getElementById('prodSortSelect').value;
@@ -1816,11 +1861,27 @@
     if (query) {
       filtered = filtered.filter(p => (p.title || '').toLowerCase().includes(query));
     }
+    if (activePriceRange === 'under10') {
+      filtered = filtered.filter(p => p.buy_price < 10);
+    } else if (activePriceRange === '10to30') {
+      filtered = filtered.filter(p => p.buy_price >= 10 && p.buy_price <= 30);
+    } else if (activePriceRange === 'over30') {
+      filtered = filtered.filter(p => p.buy_price > 30);
+    }
     renderProductsGrid(sortProducts(filtered, sortBy));
   }
 
   document.getElementById('prodSortSelect').addEventListener('change', applyProductsFilterAndSort);
   document.getElementById('prodSearchInput').addEventListener('input', applyProductsFilterAndSort);
+
+  document.querySelectorAll('.price-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.price-range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activePriceRange = btn.dataset.range;
+      applyProductsFilterAndSort();
+    });
+  });
 
   const prodAddBtn = document.getElementById('prodAddBtn');
   if (prodAddBtn) {
@@ -2126,12 +2187,14 @@
       list.innerHTML = filteredItems.slice().reverse().map((item) => {
         const margin = item.sellPrice - item.buyPrice;
         const cls = margin >= 0 ? 'pos' : 'neg';
+        const isLowMargin = item.buyPrice > 0 && item.sellPrice < item.buyPrice * 2;
         return `
           <div class="item">
             <div class="info">
               <div class="name">${escapeHtml(item.sellName || item.buyName)}</div>
               <div class="prices">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
               <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
+              ${isLowMargin ? '<span class="item-low-margin-tag">⚠️ Marge < x2</span>' : ''}
             </div>
             <div class="right">
               <div class="margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
