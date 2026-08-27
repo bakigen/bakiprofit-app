@@ -595,6 +595,7 @@
           <img id="prodPhotoPreview" class="product-photo-preview">
         </div>
         <button id="prodAddBtn">Ajouter le produit</button>
+        <button id="prodCancelEditBtn" style="display:none; background:#3A2438; margin-top:8px;">Annuler la modification</button>
       </div>
 
       <div class="card">
@@ -795,6 +796,7 @@
   }
 
   // ---- Produits qui se revendent facilement ----
+  let editingProductId = null;
   const prodPhotoInput = document.getElementById('prodPhoto');
   const prodPhotoPreview = document.getElementById('prodPhotoPreview');
   if (prodPhotoInput) {
@@ -825,6 +827,7 @@
 
     gridEl.innerHTML = data.map(p => {
       const safeLink = p.link && !/^https?:\/\//i.test(p.link) ? 'https://' + p.link : p.link;
+      const isAdmin = currentUserEmail === ADMIN_EMAIL;
       return `
       <div class="product-card">
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
@@ -835,10 +838,43 @@
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
           </div>
           ${safeLink ? `<a class="pc-link" href="${safeLink}" target="_blank">Voir l'article</a>` : ''}
+          ${isAdmin ? `
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <button class="pc-edit-btn" data-id="${p.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A2438;">Modifier</button>
+              <button class="pc-delete-btn" data-id="${p.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A1F2E; color:#F87171;">Supprimer</button>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
     }).join('');
+
+    document.querySelectorAll('.pc-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const product = data.find(p => p.id === btn.dataset.id);
+        if (!product) return;
+        editingProductId = product.id;
+        document.getElementById('prodTitle').value = product.title;
+        document.getElementById('prodLink').value = product.link || '';
+        document.getElementById('prodBuyPrice').value = product.buy_price;
+        document.getElementById('prodSellPrice').value = product.sell_price;
+        prodAddBtn.textContent = 'Enregistrer les modifications';
+        document.getElementById('prodCancelEditBtn').style.display = 'block';
+        document.getElementById('adminProductCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    document.querySelectorAll('.pc-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Supprimer ce produit ?')) return;
+        const { error } = await supabaseClient.from('products').delete().eq('id', btn.dataset.id);
+        if (error) {
+          alert('Erreur : ' + error.message);
+          return;
+        }
+        loadProducts();
+      });
+    });
   }
 
   const prodAddBtn = document.getElementById('prodAddBtn');
@@ -857,9 +893,9 @@
       }
 
       prodAddBtn.disabled = true;
-      prodAddBtn.textContent = 'Ajout en cours...';
+      prodAddBtn.textContent = editingProductId ? 'Enregistrement...' : 'Ajout en cours...';
 
-      let photoUrl = null;
+      let photoUrl = undefined;
       if (file) {
         const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const { error: uploadError } = await supabaseClient
@@ -869,7 +905,7 @@
         if (uploadError) {
           alert('Erreur upload photo : ' + uploadError.message);
           prodAddBtn.disabled = false;
-          prodAddBtn.textContent = 'Ajouter le produit';
+          prodAddBtn.textContent = editingProductId ? 'Enregistrer les modifications' : 'Ajouter le produit';
           return;
         }
 
@@ -879,26 +915,44 @@
         photoUrl = publicUrlData.publicUrl;
       }
 
-      const { error } = await supabaseClient
-        .from('products')
-        .insert({ title, link, buy_price: buyPrice, sell_price: sellPrice, photo_url: photoUrl });
+      const payload = { title, link, buy_price: buyPrice, sell_price: sellPrice };
+      if (photoUrl !== undefined) payload.photo_url = photoUrl;
+
+      let error;
+      if (editingProductId) {
+        ({ error } = await supabaseClient.from('products').update(payload).eq('id', editingProductId));
+      } else {
+        ({ error } = await supabaseClient.from('products').insert(payload));
+      }
 
       prodAddBtn.disabled = false;
-      prodAddBtn.textContent = 'Ajouter le produit';
 
       if (error) {
         alert('Erreur : ' + error.message);
+        prodAddBtn.textContent = editingProductId ? 'Enregistrer les modifications' : 'Ajouter le produit';
         return;
       }
 
-      document.getElementById('prodTitle').value = '';
-      document.getElementById('prodLink').value = '';
-      document.getElementById('prodBuyPrice').value = '';
-      document.getElementById('prodSellPrice').value = '';
-      prodPhotoInput.value = '';
-      prodPhotoPreview.style.display = 'none';
+      resetProductForm();
       loadProducts();
     });
+  }
+
+  function resetProductForm() {
+    editingProductId = null;
+    document.getElementById('prodTitle').value = '';
+    document.getElementById('prodLink').value = '';
+    document.getElementById('prodBuyPrice').value = '';
+    document.getElementById('prodSellPrice').value = '';
+    prodPhotoInput.value = '';
+    prodPhotoPreview.style.display = 'none';
+    prodAddBtn.textContent = 'Ajouter le produit';
+    document.getElementById('prodCancelEditBtn').style.display = 'none';
+  }
+
+  const prodCancelEditBtn = document.getElementById('prodCancelEditBtn');
+  if (prodCancelEditBtn) {
+    prodCancelEditBtn.addEventListener('click', resetProductForm);
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
