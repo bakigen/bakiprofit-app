@@ -450,44 +450,6 @@
   .formation-module-body li { margin-bottom: 6px; }
   .formation-module-body strong { color: var(--text); }
 
-  .formation-progress-wrap { margin-bottom: 16px; }
-  .formation-progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #1F1219;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 6px;
-  }
-  .formation-progress-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--pink), var(--green));
-    border-radius: 10px;
-    transition: width 0.3s ease;
-  }
-  .formation-progress-label {
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-align: right;
-  }
-  .formation-done-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px solid #3A2438;
-    font-size: 0.8rem;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .formation-done-check input {
-    width: 16px;
-    height: 16px;
-    accent-color: var(--pink);
-    cursor: pointer;
-  }
 
   .help-section {
     background: var(--card);
@@ -976,12 +938,7 @@
     <div class="tab-panel" id="tab-formation">
       <div class="card">
         <h2>Formation — La méthode achat/revente</h2>
-        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:10px;">Clique sur un module pour l'ouvrir.</p>
-
-        <div class="formation-progress-wrap">
-          <div class="formation-progress-bar"><div class="formation-progress-fill" id="formationProgressFill"></div></div>
-          <div class="formation-progress-label" id="formationProgressLabel">0/8 modules terminés</div>
-        </div>
+        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:16px;">Clique sur un module pour l'ouvrir.</p>
 
         <div class="formation-module" data-fmodule="1">
           <div class="formation-module-header">
@@ -1656,56 +1613,6 @@
       header.closest('.formation-module').classList.toggle('open');
     });
   });
-
-  // ---- Progression de la formation (case à cocher par module + barre) ----
-  const FORMATION_PROGRESS_KEY = 'bakiprofit_formation_progress';
-
-  function getFormationProgress() {
-    try {
-      return JSON.parse(localStorage.getItem(FORMATION_PROGRESS_KEY)) || {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function setFormationProgress(progress) {
-    localStorage.setItem(FORMATION_PROGRESS_KEY, JSON.stringify(progress));
-  }
-
-  function updateFormationProgressBar() {
-    const trackedModules = document.querySelectorAll('.formation-module[data-fmodule]:not([data-fmodule="9"])');
-    const progress = getFormationProgress();
-    const total = trackedModules.length;
-    let done = 0;
-    trackedModules.forEach(mod => {
-      if (progress[mod.dataset.fmodule]) done++;
-    });
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    const fillEl = document.getElementById('formationProgressFill');
-    const labelEl = document.getElementById('formationProgressLabel');
-    if (fillEl) fillEl.style.width = pct + '%';
-    if (labelEl) labelEl.textContent = `${done}/${total} modules terminés`;
-  }
-
-  document.querySelectorAll('.formation-module[data-fmodule]').forEach(mod => {
-    if (mod.dataset.fmodule === '9') return; // module contact, non comptabilisé
-    const body = mod.querySelector('.formation-module-body');
-    if (!body) return;
-    const progress = getFormationProgress();
-    const isDone = !!progress[mod.dataset.fmodule];
-    const checkWrap = document.createElement('label');
-    checkWrap.className = 'formation-done-check';
-    checkWrap.innerHTML = `<input type="checkbox" ${isDone ? 'checked' : ''}> Marquer ce module comme terminé`;
-    body.appendChild(checkWrap);
-    checkWrap.querySelector('input').addEventListener('change', (e) => {
-      const p = getFormationProgress();
-      p[mod.dataset.fmodule] = e.target.checked;
-      setFormationProgress(p);
-      updateFormationProgressBar();
-    });
-  });
-
-  updateFormationProgressBar();
 
   let currentUserEmail = null;
 
