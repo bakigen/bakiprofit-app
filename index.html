@@ -250,6 +250,47 @@
   button:active { transform: scale(0.98); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .quick-summary {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .quick-summary strong { color: var(--green); }
+
+  .categorie-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .categorie-badge {
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .categorie-badge strong { color: var(--text); }
+  .categorie-badge .cb-margin { font-weight: 700; }
+  .categorie-badge .cb-margin.pos { color: var(--green); }
+  .categorie-badge .cb-margin.neg { color: var(--red); }
+
+  .item-categorie-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: var(--muted);
+    border: 1px solid #3A2438;
+    border-radius: 10px;
+    padding: 1px 7px;
+    margin-top: 3px;
+  }
+
   .hero {
     background: linear-gradient(160deg, #3D1730 0%, var(--card) 60%);
     border: 1px solid #4A1F3A;
@@ -492,7 +533,29 @@
     border: 1px solid #3A2438;
     border-radius: 14px;
     overflow: hidden;
+    position: relative;
   }
+  .pc-fav-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: none;
+    background: rgba(10,10,10,0.6);
+    color: #A79BB0;
+    font-size: 1.1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .pc-fav-btn.active { color: #FFD166; }
   .product-card img {
     width: 100%;
     height: 120px;
@@ -779,6 +842,8 @@
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
+      <div class="quick-summary" id="quickSummary"></div>
+
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
         <div class="big">
@@ -815,6 +880,15 @@
             <input type="number" id="buyPrice" placeholder="0" step="0.01">
           </div>
         </div>
+        <div class="field">
+          <label>Catégorie</label>
+          <select id="itemCategorie">
+            <option value="Vêtements">Vêtements</option>
+            <option value="Chaussures">Chaussures</option>
+            <option value="Accessoires">Accessoires</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
         <div class="row-2">
           <div class="field">
             <label>Date d'achat</label>
@@ -840,6 +914,17 @@
 
       <div class="card">
         <h2>Historique</h2>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Filtrer par catégorie</label>
+          <select id="itemCategorieFilter">
+            <option value="all">Toutes les catégories</option>
+            <option value="Vêtements">Vêtements</option>
+            <option value="Chaussures">Chaussures</option>
+            <option value="Accessoires">Accessoires</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div id="categorieSummary" class="categorie-summary"></div>
         <div id="itemsList"></div>
       </div>
     </div>
@@ -880,6 +965,7 @@
           <div class="field" style="margin-bottom:0;">
             <label>Trier par</label>
             <select id="prodSortSelect">
+              <option value="favorites">Favoris d'abord</option>
               <option value="recent">Plus récents</option>
               <option value="margin">Marge décroissante</option>
               <option value="price_asc">Prix d'achat croissant</option>
@@ -1411,9 +1497,30 @@
 
   let allProductsCache = [];
 
+  const FAVORITES_KEY = 'bakiprofit_product_favorites';
+
+  function getFavorites() {
+    try {
+      return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function toggleFavorite(id) {
+    let favs = getFavorites();
+    if (favs.includes(id)) {
+      favs = favs.filter(f => f !== id);
+    } else {
+      favs.push(id);
+    }
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+  }
+
   function renderProductsGrid(data) {
     const gridEl = document.getElementById('productsGrid');
     const isAdmin = currentUserEmail === ADMIN_EMAIL;
+    const favs = getFavorites();
 
     if (!data || data.length === 0) {
       gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun produit pour le moment</div>';
@@ -1426,8 +1533,10 @@
     gridEl.innerHTML = data.map(p => {
       const safeLink = p.link && !/^https?:\/\//i.test(p.link) ? 'https://' + p.link : p.link;
       const isNew = (now - new Date(p.created_at).getTime()) < sevenDaysMs;
+      const isFav = favs.includes(p.id);
       return `
       <div class="product-card">
+        <button class="pc-fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}">${isFav ? '★' : '☆'}</button>
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
           ${isNew ? '<span class="pc-new-badge">Nouveau</span>' : ''}
@@ -1448,6 +1557,14 @@
       </div>
     `;
     }).join('');
+
+    document.querySelectorAll('.pc-fav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        toggleFavorite(btn.dataset.id);
+        const sortBy = document.getElementById('prodSortSelect').value;
+        renderProductsGrid(sortProducts(allProductsCache, sortBy));
+      });
+    });
 
     document.querySelectorAll('.pc-edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1479,7 +1596,15 @@
 
   function sortProducts(data, sortBy) {
     const sorted = [...data];
-    if (sortBy === 'margin') {
+    if (sortBy === 'favorites') {
+      const favs = getFavorites();
+      sorted.sort((a, b) => {
+        const aFav = favs.includes(a.id) ? 1 : 0;
+        const bFav = favs.includes(b.id) ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+    } else if (sortBy === 'margin') {
       sorted.sort((a, b) => (b.sell_price - b.buy_price) - (a.sell_price - a.buy_price));
     } else if (sortBy === 'price_asc') {
       sorted.sort((a, b) => a.buy_price - b.buy_price);
@@ -1671,6 +1796,7 @@
       sellPrice: Number(row.sell_price),
       buyDate: row.buy_date,
       sellDate: row.sell_date,
+      categorie: row.categorie || 'Autre',
       date: row.sell_date || row.buy_date || row.created_at
     }));
   }
@@ -1684,7 +1810,8 @@
       sell_name: item.sellName,
       sell_price: item.sellPrice,
       buy_date: item.buyDate,
-      sell_date: item.sellDate
+      sell_date: item.sellDate,
+      categorie: item.categorie
     });
     if (error) console.error(error);
   }
@@ -1804,11 +1931,17 @@
   async function render() {
     const items = await getItems();
 
+    renderQuickSummary(items);
+    renderCategorieSummary(items);
+
+    const catFilter = document.getElementById('itemCategorieFilter').value;
+    const filteredItems = catFilter === 'all' ? items : items.filter(i => (i.categorie || 'Autre') === catFilter);
+
     const list = document.getElementById('itemsList');
-    if (items.length === 0) {
+    if (filteredItems.length === 0) {
       list.innerHTML = '<div class="empty">Aucun article pour l\'instant.</div>';
     } else {
-      list.innerHTML = items.slice().reverse().map((item) => {
+      list.innerHTML = filteredItems.slice().reverse().map((item) => {
         const margin = item.sellPrice - item.buyPrice;
         const cls = margin >= 0 ? 'pos' : 'neg';
         return `
@@ -1816,6 +1949,7 @@
             <div class="info">
               <div class="name">${escapeHtml(item.sellName || item.buyName)}</div>
               <div class="prices">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
+              <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
             </div>
             <div class="right">
               <div class="margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
@@ -1835,6 +1969,36 @@
 
     drawHero(items);
   }
+
+  function renderQuickSummary(items) {
+    const el = document.getElementById('quickSummary');
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekItems = items.filter(i => {
+      const d = i.date ? new Date(i.date) : null;
+      return d && d >= weekAgo && d <= now;
+    });
+    const weekProfit = weekItems.reduce((s, i) => s + (i.sellPrice - i.buyPrice), 0);
+    const sign = weekProfit >= 0 ? '+' : '';
+    el.innerHTML = `Cette semaine : <strong>${sign}${fmt(weekProfit)}</strong> · ${weekItems.length} article${weekItems.length > 1 ? 's' : ''} vendu${weekItems.length > 1 ? 's' : ''}`;
+  }
+
+  function renderCategorieSummary(items) {
+    const el = document.getElementById('categorieSummary');
+    if (items.length === 0) { el.innerHTML = ''; return; }
+    const byCat = {};
+    items.forEach(i => {
+      const cat = i.categorie || 'Autre';
+      byCat[cat] = (byCat[cat] || 0) + (i.sellPrice - i.buyPrice);
+    });
+    el.innerHTML = Object.keys(byCat).map(cat => {
+      const margin = byCat[cat];
+      const cls = margin >= 0 ? 'pos' : 'neg';
+      return `<span class="categorie-badge"><strong>${escapeHtml(cat)}</strong> : <span class="cb-margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</span></span>`;
+    }).join('');
+  }
+
+  document.getElementById('itemCategorieFilter').addEventListener('change', render);
 
   // Pour "semaine", "mois en cours" et "année", on affiche une courbe plus fine
   // (jour ou mois) plutôt qu'un seul point global.
@@ -2080,6 +2244,7 @@
     const buyPrice = parseFloat(document.getElementById('buyPrice').value);
     const sellName = document.getElementById('sellName').value.trim();
     const sellPrice = parseFloat(document.getElementById('sellPrice').value);
+    const categorie = document.getElementById('itemCategorie').value;
     const today = new Date();
     const todayIso = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
     const buyDate = document.getElementById('buyDate').value || todayIso;
@@ -2090,7 +2255,7 @@
       return;
     }
 
-    await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate });
+    await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
 
     document.getElementById('buyName').value = '';
     document.getElementById('buyPrice').value = '';
