@@ -823,7 +823,9 @@
       return;
     }
 
-    gridEl.innerHTML = data.map(p => `
+    gridEl.innerHTML = data.map(p => {
+      const safeLink = p.link && !/^https?:\/\//i.test(p.link) ? 'https://' + p.link : p.link;
+      return `
       <div class="product-card">
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
@@ -832,17 +834,19 @@
             <span class="pc-buy">Achat: ${p.buy_price}€</span> →
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
           </div>
-          ${p.link ? `<a class="pc-link" href="${p.link}" target="_blank">Voir l'article</a>` : ''}
+          ${safeLink ? `<a class="pc-link" href="${safeLink}" target="_blank">Voir l'article</a>` : ''}
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   const prodAddBtn = document.getElementById('prodAddBtn');
   if (prodAddBtn) {
     prodAddBtn.addEventListener('click', async () => {
       const title = document.getElementById('prodTitle').value.trim();
-      const link = document.getElementById('prodLink').value.trim();
+      let link = document.getElementById('prodLink').value.trim();
+      if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
       const buyPrice = parseFloat(document.getElementById('prodBuyPrice').value);
       const sellPrice = parseFloat(document.getElementById('prodSellPrice').value);
       const file = prodPhotoInput.files[0];
