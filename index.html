@@ -2471,8 +2471,11 @@
   });
 
   // ---- Notifications visuelles sur les onglets (Produits / Formation) ----
-  // À incrémenter manuellement (nouvelle date) à chaque ajout d'un nouveau module de formation.
-  const FORMATION_CONTENT_VERSION = '2026-08-27';
+  // La "version" de la Formation est calculée automatiquement à partir du nombre de modules
+  // présents dans le code : dès qu'un module est ajouté ou retiré, le compteur change tout seul.
+  function getFormationContentVersion() {
+    return String(document.querySelectorAll('.formation-module[data-fmodule]').length);
+  }
   const LAST_SEEN_PRODUCTS_KEY = 'bakiprofit_last_seen_products';
   const LAST_SEEN_FORMATION_KEY = 'bakiprofit_last_seen_formation_version';
 
@@ -2482,15 +2485,15 @@
   }
 
   function markFormationSeen() {
-    localStorage.setItem(LAST_SEEN_FORMATION_KEY, FORMATION_CONTENT_VERSION);
+    localStorage.setItem(LAST_SEEN_FORMATION_KEY, getFormationContentVersion());
     document.getElementById('formationDot').style.display = 'none';
   }
 
   async function checkTabNotifications() {
-    // Formation : compare la version du contenu à la dernière vue sur cet appareil
+    // Formation : compare le nombre de modules actuels à celui vu la dernière fois sur cet appareil
     const lastSeenFormation = localStorage.getItem(LAST_SEEN_FORMATION_KEY);
     document.getElementById('formationDot').style.display =
-      (lastSeenFormation !== FORMATION_CONTENT_VERSION) ? 'block' : 'none';
+      (lastSeenFormation !== getFormationContentVersion()) ? 'block' : 'none';
 
     // Produits : compare la date du produit le plus récent à la dernière visite de l'onglet
     const { data, error } = await supabaseClient
