@@ -200,7 +200,76 @@
     vertical-align: middle;
   }
 
+  .popular-badge {
+    display: inline-block;
+    background: #FFD166;
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .tarifs-toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tarifs-toc a {
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .tarifs-toc a:hover { color: var(--pink); border-color: var(--pink); }
+
   .trust-section-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+  .compare-table { display: flex; flex-direction: column; gap: 2px; }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .compare-cell {
+    font-size: 0.72rem;
+    padding: 8px 6px;
+    border-radius: 8px;
+    line-height: 1.35;
+  }
+  .compare-header .compare-cell {
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding-bottom: 2px;
+  }
+  .compare-label {
+    color: var(--muted);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+  }
+  .compare-bad {
+    background: rgba(248, 113, 113, 0.1);
+    color: #F87171;
+  }
+  .compare-good {
+    background: rgba(139, 214, 41, 0.1);
+    color: var(--green);
+  }
+  .compare-header .compare-bad { background: transparent; }
+  .compare-header .compare-good { background: transparent; }
 
   .landing-points li {
     display: flex;
@@ -952,6 +1021,26 @@
     padding: 0;
   }
 
+  .sticky-cta-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(7, 5, 8, 0.96);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid #3A2438;
+    z-index: 950;
+  }
+  .sticky-cta-bar .quick-auth-btn { margin: 0; }
+  .sticky-cta-bar .quick-auth-btn.primary {
+    background: linear-gradient(90deg, var(--pink), var(--pink-deep));
+    color: white;
+    border: none;
+  }
+
   .welcome-overlay {
     position: fixed;
     inset: 0;
@@ -1029,6 +1118,11 @@
 
 <div class="toast" id="toast"></div>
 <button id="scrollTopBtn" class="scroll-top-btn" style="display:none;" type="button">↑</button>
+
+<div class="sticky-cta-bar" id="stickyCtaBar" style="display:none;">
+  <button type="button" class="quick-auth-btn" id="stickyLoginBtn">Connexion</button>
+  <button type="button" class="quick-auth-btn primary" id="stickySignupBtn">Inscription</button>
+</div>
 
 <div class="app">
   <div class="brand" id="brandBlock">
@@ -1159,6 +1253,37 @@
           </div>
         </div>
       </div>
+
+      <div class="landing-section">
+        <h3>⚖️ Sans vs avec BAKIPROFIT</h3>
+        <div class="compare-table">
+          <div class="compare-row compare-header">
+            <div class="compare-cell"></div>
+            <div class="compare-cell compare-bad">Sans</div>
+            <div class="compare-cell compare-good">Avec BAKIPROFIT</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell compare-label">Calcul du bénéfice</div>
+            <div class="compare-cell compare-bad">À la main, ou tableur compliqué</div>
+            <div class="compare-cell compare-good">Automatique, en temps réel</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell compare-label">Vue d'ensemble</div>
+            <div class="compare-cell compare-bad">Difficile à avoir</div>
+            <div class="compare-cell compare-good">Graphique clair, mois par mois</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell compare-label">Oublis / erreurs</div>
+            <div class="compare-cell compare-bad">Fréquents</div>
+            <div class="compare-cell compare-good">Historique complet, rien ne se perd</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell compare-label">Apprentissage</div>
+            <div class="compare-cell compare-bad">Par essais-erreurs</div>
+            <div class="compare-cell compare-good">Formation intégrée, méthode claire</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="landing-tab-panel" id="ltab-fonctions">
@@ -1187,7 +1312,14 @@
     </div>
 
     <div class="landing-tab-panel" id="ltab-tarifs">
-      <div class="landing-section">
+      <div class="tarifs-toc">
+        <a href="#tarifs-anchor-confiance">🔒 Confiance</a>
+        <a href="#tarifs-anchor-affiliation">💰 Affiliation</a>
+        <a href="#tarifs-anchor-faq">❓ FAQ</a>
+        <a href="#tarifs-anchor-prix">💳 Prix</a>
+      </div>
+
+      <div class="landing-section" id="tarifs-anchor-confiance">
         <div class="trust-section-icon">🔒</div>
         <h3>Pourquoi nous faire confiance</h3>
         <p>Ton compte est personnel et protégé par mot de passe : personne d'autre que toi n'a accès à tes données (achats, reventes, bénéfices).</p>
@@ -1198,7 +1330,7 @@
         </ul>
       </div>
 
-      <div class="landing-section">
+      <div class="landing-section" id="tarifs-anchor-affiliation">
         <h3>💰 Le programme d'affiliation</h3>
         <p>En plus du suivi de tes bénéfices, ton compte BAKIPROFIT te donne accès à un onglet Affiliations : parraine tes proches et touche une commission à chaque vente réalisée grâce à toi.</p>
         <ul class="landing-points" style="margin-top:0;">
@@ -1208,27 +1340,27 @@
         </ul>
       </div>
 
-      <div class="landing-section">
+      <div class="landing-section" id="tarifs-anchor-faq">
         <h3>❓ Questions fréquentes</h3>
         <div class="faq-item">
-          <div class="faq-q">Combien de temps avant d'être rentable ?</div>
+          <div class="faq-q">💰 Combien de temps avant d'être rentable ?</div>
           <p class="faq-a">Ça dépend de ton investissement de départ et du temps que tu y consacres. La Formation intégrée t'aide à structurer ta méthode rapidement, et BAKIPROFIT te permet de suivre précisément ta rentabilité dès le premier article.</p>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Faut-il un stock de départ pour se lancer ?</div>
+          <div class="faq-q">📦 Faut-il un stock de départ pour se lancer ?</div>
           <p class="faq-a">Non. Tu peux commencer avec un seul article, ou même sans rien acheter à l'avance grâce à la méthode du dropshipping expliquée dans la Formation.</p>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Dois-je choisir entre BAKIGEN et BAKIPROFIT ?</div>
+          <div class="faq-q">🔀 Dois-je choisir entre BAKIGEN et BAKIPROFIT ?</div>
           <p class="faq-a">Non, tu peux prendre les deux séparément ou en pack à prix réduit. Ils fonctionnent très bien ensemble : BAKIGEN pour générer tes annonces, BAKIPROFIT pour suivre ta rentabilité.</p>
         </div>
         <div class="faq-item">
-          <div class="faq-q">L'accès est-il limité dans le temps ?</div>
+          <div class="faq-q">⏳ L'accès est-il limité dans le temps ?</div>
           <p class="faq-a">Non, aucun abonnement : un seul paiement te donne un accès à vie à l'application que tu choisis.</p>
         </div>
       </div>
 
-      <div class="landing-section">
+      <div class="landing-section" id="tarifs-anchor-prix">
         <h3>Tarifs <span class="lifetime-badge">Accès à vie</span></h3>
         <ul class="landing-points" style="margin-top:0;">
           <li>
@@ -1241,7 +1373,7 @@
           </li>
           <li>
             <span class="dot">✓</span>
-            <span>Pack BAKIGEN + BAKIPROFIT — <strong style="color:var(--green);">40€</strong></span>
+            <span>Pack BAKIGEN + BAKIPROFIT — <strong style="color:var(--green);">40€</strong> <span class="popular-badge">⭐ Le plus populaire</span></span>
           </li>
         </ul>
         <p style="margin-top:12px; margin-bottom:0;">Un seul paiement, aucun abonnement. Pour l'achat, contacte-nous directement sur Instagram 👇</p>
@@ -1764,6 +1896,20 @@
   });
   scrollTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ---- Barre CTA sticky (uniquement sur la page de présentation, non connecté) ----
+  const stickyCtaBar = document.getElementById('stickyCtaBar');
+  window.addEventListener('scroll', () => {
+    const landingEl = document.getElementById('landingBlock');
+    const isOnLanding = landingEl && landingEl.style.display !== 'none';
+    stickyCtaBar.style.display = (isOnLanding && window.scrollY > 260) ? 'flex' : 'none';
+  });
+  document.getElementById('stickyLoginBtn').addEventListener('click', () => {
+    document.getElementById('quickLoginBtn').click();
+  });
+  document.getElementById('stickySignupBtn').addEventListener('click', () => {
+    document.getElementById('quickSignupBtn').click();
   });
 
   const SUPABASE_URL = "https://coymtzrxybjdpyeuxaaa.supabase.co";
