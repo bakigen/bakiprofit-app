@@ -262,6 +262,17 @@
   }
   .quick-summary strong { color: var(--green); }
 
+  .inactivity-reminder {
+    background: rgba(247, 55, 156, 0.12);
+    border: 1px solid #4A1F3A;
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
+    color: var(--text);
+    text-align: center;
+  }
+
   .tip-of-day {
     background: linear-gradient(135deg, rgba(247,55,156,0.12), rgba(139,214,41,0.10));
     border: 1px solid #3A2438;
@@ -280,6 +291,51 @@
     color: var(--muted);
     font-weight: 700;
     margin-bottom: 4px;
+  }
+
+  .goal-card {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .goal-header a {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .goal-bar {
+    width: 100%;
+    height: 10px;
+    background: #1F1219;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .goal-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    transition: width 0.3s ease, background 0.3s ease;
+    background: var(--red);
+  }
+  .goal-fill.mid { background: #FFD166; }
+  .goal-fill.good { background: var(--green); }
+  .goal-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: right;
   }
 
   .categorie-summary {
@@ -637,9 +693,81 @@
     flex-shrink: 0;
   }
   .logout-top:hover { color: var(--pink); }
+
+  .welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(7, 5, 8, 0.92);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .welcome-card {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 24px;
+    padding: 30px 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  .welcome-emoji { font-size: 2.5rem; margin-bottom: 8px; }
+  .welcome-card h2 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .welcome-card p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+  .welcome-points {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  .welcome-points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .welcome-points li .dot {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--green));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; color: #0a0a0a;
+    margin-top: 1px;
+  }
 </style>
 </head>
 <body>
+
+<div class="welcome-overlay" id="welcomeOverlay" style="display:none;">
+  <div class="welcome-card">
+    <div class="welcome-emoji">👋</div>
+    <h2>Bienvenue sur BAKIPROFIT</h2>
+    <p>Voici en deux mots comment ça marche :</p>
+    <ul class="welcome-points">
+      <li><span class="dot">✓</span> Enregistre tes achats/reventes, ton bénéfice est calculé automatiquement</li>
+      <li><span class="dot">✓</span> Consulte le catalogue Produits pour trouver des idées faciles à revendre</li>
+      <li><span class="dot">✓</span> Une formation complète t'attend dans l'onglet dédié</li>
+      <li><span class="dot">✓</span> Un souci ? L'onglet Aide te met en relation directe avec nous</li>
+    </ul>
+    <button id="welcomeCloseBtn">C'est parti !</button>
+  </div>
+</div>
 
 <div class="app">
   <div class="brand" id="brandBlock">
@@ -863,7 +991,17 @@
 
     <div class="tab-panel active" id="tab-suivi">
       <div class="quick-summary" id="quickSummary"></div>
+      <div class="inactivity-reminder" id="inactivityReminder" style="display:none;"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
+
+      <div class="goal-card" id="goalCard">
+        <div class="goal-header">
+          <span>🎯 Objectif du mois</span>
+          <a id="goalEditLink">Modifier</a>
+        </div>
+        <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+        <div class="goal-label" id="goalLabel"></div>
+      </div>
 
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
@@ -1244,6 +1382,16 @@
 </div>
 
 <script>
+  // ---- Écran de bienvenue au tout premier lancement (une seule fois par appareil) ----
+  const WELCOME_SEEN_KEY = 'bakiprofit_welcome_seen';
+  if (!localStorage.getItem(WELCOME_SEEN_KEY)) {
+    document.getElementById('welcomeOverlay').style.display = 'flex';
+  }
+  document.getElementById('welcomeCloseBtn').addEventListener('click', () => {
+    localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+    document.getElementById('welcomeOverlay').style.display = 'none';
+  });
+
   const SUPABASE_URL = "https://coymtzrxybjdpyeuxaaa.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveW10enJ4eWJqZHB5ZXV4YWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTUyNzMsImV4cCI6MjEwMjc5MTI3M30.fwSuQ0IivdFP88fQktqSDY-VbZQ-SqyQ2yT7CdPk0lQ";
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1961,6 +2109,7 @@
 
     renderQuickSummary(items);
     renderTipOfDay();
+    renderGoal(items);
     renderCategorieSummary(items);
 
     const catFilter = document.getElementById('itemCategorieFilter').value;
@@ -2024,6 +2173,55 @@
     el.innerHTML = `<span class="tip-label">💡 Conseil du jour</span>${tip}`;
   }
 
+  // ---- Objectif mensuel (stocké sur l'appareil) ----
+  const GOAL_KEY = 'bakiprofit_monthly_goal';
+
+  function getMonthlyGoal() {
+    const v = parseFloat(localStorage.getItem(GOAL_KEY));
+    return isNaN(v) ? null : v;
+  }
+
+  function setMonthlyGoal(v) {
+    localStorage.setItem(GOAL_KEY, String(v));
+  }
+
+  function renderGoal(items) {
+    const goal = getMonthlyGoal();
+    const fillEl = document.getElementById('goalFill');
+    const labelEl = document.getElementById('goalLabel');
+    if (!goal || goal <= 0) {
+      fillEl.style.width = '0%';
+      fillEl.className = 'goal-fill';
+      labelEl.textContent = 'Aucun objectif défini — clique sur "Modifier" pour en fixer un.';
+      return;
+    }
+    const now = new Date();
+    const monthProfit = items.reduce((sum, i) => {
+      const d = i.date ? new Date(i.date) : null;
+      if (d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+        return sum + (i.sellPrice - i.buyPrice);
+      }
+      return sum;
+    }, 0);
+    const pct = Math.max(0, Math.min(100, Math.round((monthProfit / goal) * 100)));
+    fillEl.style.width = pct + '%';
+    fillEl.className = 'goal-fill' + (pct >= 100 ? ' good' : pct >= 50 ? ' mid' : '');
+    labelEl.textContent = `${fmt(monthProfit)} / ${fmt(goal)} ce mois-ci (${pct}%)`;
+  }
+
+  document.getElementById('goalEditLink').addEventListener('click', async () => {
+    const current = getMonthlyGoal();
+    const input = prompt('Fixe ton objectif de bénéfice pour ce mois (en €) :', current || '');
+    if (input === null) return;
+    const val = parseFloat(input.replace(',', '.'));
+    if (isNaN(val) || val < 0) {
+      alert('Merci d\'indiquer un montant valide.');
+      return;
+    }
+    setMonthlyGoal(val);
+    render();
+  });
+
   function renderQuickSummary(items) {
     const el = document.getElementById('quickSummary');
     const now = new Date();
@@ -2035,6 +2233,26 @@
     const weekProfit = weekItems.reduce((s, i) => s + (i.sellPrice - i.buyPrice), 0);
     const sign = weekProfit >= 0 ? '+' : '';
     el.innerHTML = `Cette semaine : <strong>${sign}${fmt(weekProfit)}</strong> · ${weekItems.length} article${weekItems.length > 1 ? 's' : ''} vendu${weekItems.length > 1 ? 's' : ''}`;
+
+    // Rappel si aucun article ajouté depuis un moment
+    const INACTIVITY_DAYS = 10;
+    let lastDate = null;
+    items.forEach(i => {
+      const d = i.date ? new Date(i.date) : null;
+      if (d && (!lastDate || d > lastDate)) lastDate = d;
+    });
+    const reminderEl = document.getElementById('inactivityReminder');
+    if (lastDate) {
+      const daysSince = Math.floor((now - lastDate) / (24 * 60 * 60 * 1000));
+      if (daysSince >= INACTIVITY_DAYS) {
+        reminderEl.style.display = 'block';
+        reminderEl.textContent = `Ça fait ${daysSince} jours, prêt·e à ajouter un nouvel article ? 💪`;
+      } else {
+        reminderEl.style.display = 'none';
+      }
+    } else {
+      reminderEl.style.display = 'none';
+    }
   }
 
   function renderCategorieSummary(items) {
