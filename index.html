@@ -262,6 +262,26 @@
   }
   .quick-summary strong { color: var(--green); }
 
+  .tip-of-day {
+    background: linear-gradient(135deg, rgba(247,55,156,0.12), rgba(139,214,41,0.10));
+    border: 1px solid #3A2438;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .tip-of-day .tip-label {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
   .categorie-summary {
     display: flex;
     flex-wrap: wrap;
@@ -843,6 +863,7 @@
 
     <div class="tab-panel active" id="tab-suivi">
       <div class="quick-summary" id="quickSummary"></div>
+      <div class="tip-of-day" id="tipOfDay"></div>
 
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
@@ -961,6 +982,7 @@
 
       <div class="card">
         <h2>Produits qui se revendent facilement</h2>
+        <input type="text" id="prodSearchInput" placeholder="🔍 Rechercher un produit..." style="margin-bottom:12px;">
         <div class="row-2" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
             <label>Trier par</label>
@@ -1561,8 +1583,7 @@
     document.querySelectorAll('.pc-fav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         toggleFavorite(btn.dataset.id);
-        const sortBy = document.getElementById('prodSortSelect').value;
-        renderProductsGrid(sortProducts(allProductsCache, sortBy));
+        applyProductsFilterAndSort();
       });
     });
 
@@ -1633,14 +1654,21 @@
     }
 
     allProductsCache = data;
-    const sortBy = document.getElementById('prodSortSelect').value;
-    renderProductsGrid(sortProducts(allProductsCache, sortBy));
+    applyProductsFilterAndSort();
   }
 
-  document.getElementById('prodSortSelect').addEventListener('change', () => {
+  function applyProductsFilterAndSort() {
+    const query = document.getElementById('prodSearchInput').value.trim().toLowerCase();
     const sortBy = document.getElementById('prodSortSelect').value;
-    renderProductsGrid(sortProducts(allProductsCache, sortBy));
-  });
+    let filtered = allProductsCache;
+    if (query) {
+      filtered = filtered.filter(p => (p.title || '').toLowerCase().includes(query));
+    }
+    renderProductsGrid(sortProducts(filtered, sortBy));
+  }
+
+  document.getElementById('prodSortSelect').addEventListener('change', applyProductsFilterAndSort);
+  document.getElementById('prodSearchInput').addEventListener('input', applyProductsFilterAndSort);
 
   const prodAddBtn = document.getElementById('prodAddBtn');
   if (prodAddBtn) {
@@ -1932,6 +1960,7 @@
     const items = await getItems();
 
     renderQuickSummary(items);
+    renderTipOfDay();
     renderCategorieSummary(items);
 
     const catFilter = document.getElementById('itemCategorieFilter').value;
@@ -1968,6 +1997,31 @@
     }
 
     drawHero(items);
+  }
+
+  // ---- Conseil du jour (tiré du contenu de la Formation) ----
+  const DAILY_TIPS = [
+    "Avant d'acheter un article, demande-toi toujours : est-ce que je sais à quel prix je peux le revendre ?",
+    "Privilégie les lieux d'achat que tu peux visiter régulièrement : la régularité paie plus que la chance ponctuelle.",
+    "Achète les vêtements d'été en hiver (et inversement) : moins chers hors saison, revendus au bon moment.",
+    "Vise une marge d'au moins x2 à x3 par rapport à ton prix d'achat pour rester rentable après les frais Vinted.",
+    "Un titre clair (marque + type d'article + taille) aide ton annonce à mieux ressortir dans les recherches.",
+    "La lumière naturelle change tout sur une photo : évite le flash direct qui dénature les couleurs.",
+    "Un vêtement repassé et propre donne toujours une meilleure première impression sur les photos.",
+    "Réponds vite aux messages : un acheteur sans réponse rapide va souvent voir ailleurs.",
+    "Reste courtois même face à une négociation basse : un refus poli laisse la porte ouverte à une vente plus tard.",
+    "Fixe-toi un prix plancher avant de négocier, pour ne jamais vendre à perte sous le coup de la pression.",
+    "Emballe soigneusement et expédie rapidement (idéalement sous 48h) : ça construit ta réputation de vendeur.",
+    "La rentabilité vient de la répétition d'une bonne méthode, pas d'un coup de chance isolé."
+  ];
+
+  function renderTipOfDay() {
+    const el = document.getElementById('tipOfDay');
+    if (!el) return;
+    const today = new Date();
+    const dayIndex = Math.floor(today.getTime() / (24 * 60 * 60 * 1000));
+    const tip = DAILY_TIPS[dayIndex % DAILY_TIPS.length];
+    el.innerHTML = `<span class="tip-label">💡 Conseil du jour</span>${tip}`;
   }
 
   function renderQuickSummary(items) {
