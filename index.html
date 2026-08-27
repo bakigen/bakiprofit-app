@@ -360,6 +360,36 @@
     padding: 40px 20px;
   }
 
+  .help-section {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .help-section h3 {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .help-section p {
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+  .help-contact-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
   .product-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -629,6 +659,7 @@
       <button class="tab-btn" data-tab="produits">Produits</button>
       <button class="tab-btn" data-tab="affiliations">Affiliations</button>
       <button class="tab-btn" data-tab="formation">Formation</button>
+      <button class="tab-btn" data-tab="aide">Aide</button>
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
@@ -783,6 +814,46 @@
         <div class="formation-placeholder">
           Le contenu de la formation arrive bientôt 🚀
         </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-aide">
+      <div class="help-section">
+        <h3>📝 Étape 1 — Enregistrer un article</h3>
+        <p>Dans l'onglet <strong>Suivi</strong>, renseigne le nom et le prix d'achat de l'article dans les champs prévus, puis le nom et le prix de revente une fois qu'il est vendu.</p>
+        <p style="margin-bottom:0;">Clique sur le bouton d'ajout : le bénéfice est calculé automatiquement pour toi.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>📈 Étape 2 — Suivre tes bénéfices</h3>
+        <p>En haut de l'onglet Suivi, le graphique affiche l'évolution de tes bénéfices. Utilise le sélecteur pour changer de métrique (bénéfice, prix d'achat, prix de revente) et le sélecteur de période pour changer la vue (mensuel, annuel...).</p>
+        <p style="margin-bottom:0;">Le pourcentage à côté du chiffre principal indique ton évolution par rapport à la période précédente.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🛍️ Étape 3 — Consulter les fiches produits</h3>
+        <p style="margin-bottom:0;">L'onglet <strong>Produits</strong> te donne accès au catalogue d'articles faciles à revendre : titre, lien d'achat, prix d'achat et de revente conseillés, avec photo et date de publication. De nouvelles fiches sont ajoutées régulièrement.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>💰 Étape 4 — Suivre tes affiliations</h3>
+        <p style="margin-bottom:0;">L'onglet <strong>Affiliations</strong> te permet de suivre les commissions que tu touches en parrainant tes proches (5€ pour un pack seul, 15€ pour le pack complet).</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🎓 Étape 5 — Se former</h3>
+        <p style="margin-bottom:0;">L'onglet <strong>Formation</strong> contiendra prochainement du contenu pour t'aider à progresser dans l'achat/revente. Reste connecté, ça arrive bientôt 🚀</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🔒 Bon à savoir</h3>
+        <p style="margin-bottom:0;">Ton compte est personnel et sécurisé : personne d'autre ne voit tes données. Si tu oublies ton mot de passe, utilise le lien "Mot de passe oublié ?" sur l'écran de connexion.</p>
+      </div>
+
+      <div class="help-section" style="text-align:center;">
+        <h3 style="display:inline-block;">❓ Un souci, une question ?</h3>
+        <p>Si tu rencontres un problème ou que tu as besoin d'aide, contacte-moi directement sur Instagram, je te réponds au plus vite 👇</p>
+        <a href="https://instagram.com/bakiprofitgen" target="_blank" class="help-contact-btn">📷 Contacter @bakiprofitgen</a>
       </div>
     </div>
   </div>
