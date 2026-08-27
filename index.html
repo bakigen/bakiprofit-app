@@ -379,7 +379,23 @@
     margin-top: 8px;
     display: none;
   }
-  .user-badge { text-align: center; color: var(--muted); font-size: 0.8rem; margin-bottom: 16px; }
+  .user-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .user-badge { color: var(--muted); font-size: 0.8rem; }
+  .logout-top {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .logout-top:hover { color: var(--pink); }
 </style>
 </head>
 <body>
@@ -525,7 +541,10 @@
   </div>
 
   <div id="mainAppContent" style="display:none;">
-    <div class="user-badge" id="userBadge"></div>
+    <div class="user-badge-row">
+      <span class="user-badge" id="userBadge"></span>
+      <a id="logoutLink" class="logout-top">Se déconnecter</a>
+    </div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="suivi">Suivi</button>
@@ -688,8 +707,6 @@
         </div>
       </div>
     </div>
-
-    <div class="logout"><a id="logoutLink">Se déconnecter</a></div>
   </div>
 </div>
 
