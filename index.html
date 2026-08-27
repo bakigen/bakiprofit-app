@@ -1561,7 +1561,7 @@
             <button id="shareRecapCloseBtn" type="button">✕</button>
           </div>
           <canvas id="shareRecapCanvas" width="600" height="750" style="width:100%; border-radius:16px; margin-bottom:14px;"></canvas>
-          <button id="shareRecapDownloadBtn" type="button">💾 Télécharger l'image</button>
+          <button id="shareRecapDownloadBtn" type="button">💾 Enregistrer dans mes photos</button>
         </div>
       </div>
 
@@ -3205,56 +3205,56 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // Filigrane logo texte
+    // Filigrane logo texte — placé en haut, à l'écart du contenu principal, très discret
     ctx.save();
-    ctx.globalAlpha = 0.08;
-    ctx.font = 'bold 140px sans-serif';
+    ctx.globalAlpha = 0.05;
+    ctx.font = 'bold 70px sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(-Math.PI / 10);
+    ctx.translate(w / 2, 90);
+    ctx.rotate(-Math.PI / 22);
     ctx.fillText('BAKI', 0, 0);
     ctx.restore();
 
     // Titre
     ctx.textAlign = 'center';
     ctx.fillStyle = '#F9A8D4';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.fillText('MON BILAN DU MOIS', w / 2, 100);
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillText('MON BILAN DU MOIS', w / 2, 160);
 
     ctx.fillStyle = '#A79BB0';
     ctx.font = '26px sans-serif';
-    ctx.fillText(monthNames[now.getMonth()] + ' ' + now.getFullYear(), w / 2, 140);
+    ctx.fillText(monthNames[now.getMonth()] + ' ' + now.getFullYear(), w / 2, 200);
 
     // Montant principal
     const sign = monthProfit >= 0 ? '+' : '';
     ctx.fillStyle = monthProfit >= 0 ? '#8BD629' : '#F87171';
-    ctx.font = 'bold 90px sans-serif';
-    ctx.fillText(sign + monthProfit.toFixed(2).replace(/\.00$/, '') + '€', w / 2, 300);
+    ctx.font = 'bold 92px sans-serif';
+    ctx.fillText(sign + monthProfit.toFixed(2).replace(/\.00$/, '') + '€', w / 2, 350);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '28px sans-serif';
-    ctx.fillText('de bénéfice', w / 2, 345);
+    ctx.fillText('de bénéfice', w / 2, 400);
 
     // Sous-stat
     ctx.fillStyle = '#F9A8D4';
-    ctx.font = 'bold 34px sans-serif';
-    ctx.fillText(monthCount + ' article' + (monthCount > 1 ? 's' : '') + ' vendu' + (monthCount > 1 ? 's' : ''), w / 2, 430);
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillText(monthCount + ' article' + (monthCount > 1 ? 's' : '') + ' vendu' + (monthCount > 1 ? 's' : ''), w / 2, 490);
 
     // Séparateur
     ctx.strokeStyle = 'rgba(255,255,255,0.15)';
     ctx.beginPath();
-    ctx.moveTo(80, 480);
-    ctx.lineTo(w - 80, 480);
+    ctx.moveTo(80, 560);
+    ctx.lineTo(w - 80, 560);
     ctx.stroke();
 
     // Footer
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 30px sans-serif';
-    ctx.fillText('BAKIPROFIT', w / 2, 560);
+    ctx.font = 'bold 32px sans-serif';
+    ctx.fillText('BAKIPROFIT', w / 2, 640);
     ctx.fillStyle = '#A79BB0';
     ctx.font = '20px sans-serif';
-    ctx.fillText('Suivi des achats/reventes & bénéfices', w / 2, 592);
+    ctx.fillText('Suivi des achats/reventes & bénéfices', w / 2, 675);
   }
 
   document.getElementById('shareRecapLink').addEventListener('click', () => {
@@ -3264,12 +3264,34 @@
   document.getElementById('shareRecapCloseBtn').addEventListener('click', () => {
     document.getElementById('shareRecapOverlay').style.display = 'none';
   });
-  document.getElementById('shareRecapDownloadBtn').addEventListener('click', () => {
+  document.getElementById('shareRecapDownloadBtn').addEventListener('click', async () => {
     const canvas = document.getElementById('shareRecapCanvas');
-    const link = document.createElement('a');
-    link.download = 'bakiprofit-bilan-du-mois.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    const btn = document.getElementById('shareRecapDownloadBtn');
+    const originalText = btn.textContent;
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'bakiprofit-bilan-du-mois.png', { type: 'image/png' });
+
+      // Sur mobile (iOS/Android), le partage natif propose "Enregistrer l'image"
+      // dans la galerie — c'est le seul moyen fiable d'y accéder depuis le navigateur.
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Mon bilan BAKIPROFIT' });
+          return;
+        } catch (err) {
+          // L'utilisateur a peut-être annulé le partage : pas d'erreur à afficher dans ce cas.
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+
+      // Repli (ordinateur, ou navigateur sans partage natif) : ouvre l'image dans un nouvel onglet.
+      // Sur mobile, un appui long sur l'image permet alors de l'enregistrer dans la galerie.
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      btn.textContent = '📸 Fais un appui long sur l\'image pour l\'enregistrer';
+      setTimeout(() => { btn.textContent = originalText; }, 4000);
+    }, 'image/png');
   });
 
   function renderQuickSummary(items) {
