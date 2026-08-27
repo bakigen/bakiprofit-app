@@ -710,6 +710,7 @@
     border-radius: 12px;
   }
   .tab-btn {
+    position: relative;
     flex: 1;
     margin: 0;
     padding: 10px;
@@ -724,6 +725,17 @@
   .tab-btn.active { background: linear-gradient(90deg, var(--pink), var(--pink-deep)); color: white; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+
+  .tab-dot {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #F87171;
+    box-shadow: 0 0 0 2px #1F1219;
+  }
 
   .comm-table {
     width: 100%;
@@ -1440,9 +1452,9 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="suivi">Suivi</button>
-      <button class="tab-btn" data-tab="produits">Produits</button>
+      <button class="tab-btn" data-tab="produits">Produits<span class="tab-dot" id="produitsDot" style="display:none;"></span></button>
       <button class="tab-btn" data-tab="affiliations">Affiliations</button>
-      <button class="tab-btn" data-tab="formation">Formation</button>
+      <button class="tab-btn" data-tab="formation">Formation<span class="tab-dot" id="formationDot" style="display:none;"></span></button>
       <button class="tab-btn" data-tab="aide">Aide</button>
     </div>
 
@@ -2452,10 +2464,49 @@
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       if (btn.dataset.tab === 'affiliations') loadCommissions();
-      if (btn.dataset.tab === 'produits') loadProducts();
+      if (btn.dataset.tab === 'produits') { loadProducts(); markProduitsSeen(); }
       if (btn.dataset.tab === 'suivi') render();
+      if (btn.dataset.tab === 'formation') markFormationSeen();
     });
   });
+
+  // ---- Notifications visuelles sur les onglets (Produits / Formation) ----
+  // À incrémenter manuellement (nouvelle date) à chaque ajout d'un nouveau module de formation.
+  const FORMATION_CONTENT_VERSION = '2026-08-27';
+  const LAST_SEEN_PRODUCTS_KEY = 'bakiprofit_last_seen_products';
+  const LAST_SEEN_FORMATION_KEY = 'bakiprofit_last_seen_formation_version';
+
+  function markProduitsSeen() {
+    localStorage.setItem(LAST_SEEN_PRODUCTS_KEY, new Date().toISOString());
+    document.getElementById('produitsDot').style.display = 'none';
+  }
+
+  function markFormationSeen() {
+    localStorage.setItem(LAST_SEEN_FORMATION_KEY, FORMATION_CONTENT_VERSION);
+    document.getElementById('formationDot').style.display = 'none';
+  }
+
+  async function checkTabNotifications() {
+    // Formation : compare la version du contenu à la dernière vue sur cet appareil
+    const lastSeenFormation = localStorage.getItem(LAST_SEEN_FORMATION_KEY);
+    document.getElementById('formationDot').style.display =
+      (lastSeenFormation !== FORMATION_CONTENT_VERSION) ? 'block' : 'none';
+
+    // Produits : compare la date du produit le plus récent à la dernière visite de l'onglet
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error || !data || data.length === 0) {
+      document.getElementById('produitsDot').style.display = 'none';
+      return;
+    }
+    const lastSeenProducts = localStorage.getItem(LAST_SEEN_PRODUCTS_KEY);
+    const latestProductDate = new Date(data[0].created_at);
+    const hasNew = !lastSeenProducts || latestProductDate > new Date(lastSeenProducts);
+    document.getElementById('produitsDot').style.display = hasNew ? 'block' : 'none';
+  }
 
   // ---- Modules de formation dépliables ----
   document.querySelectorAll('.formation-module-header').forEach(header => {
@@ -2541,6 +2592,7 @@
       document.getElementById('forceChangeCard').style.display = 'none';
       mainAppContent.style.display = 'block';
       render();
+      checkTabNotifications();
     } else {
       landingBlock.style.display = 'block';
       document.getElementById('quickAuthRow').style.display = 'flex';
