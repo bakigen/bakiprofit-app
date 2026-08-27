@@ -431,12 +431,22 @@
   .item .margin { font-weight: 800; font-size: 1rem; }
   .item .margin.pos { color: var(--green); }
   .item .margin.neg { color: var(--red); }
+  .item-actions { display: flex; gap: 6px; }
   .item .del {
     width: auto;
     padding: 6px 10px;
     margin: 0;
     background: #3A1F2E;
     color: var(--red);
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+  .item .edit-item {
+    width: auto;
+    padding: 6px 10px;
+    margin: 0;
+    background: #3A2438;
+    color: var(--text);
     font-size: 0.8rem;
     border-radius: 8px;
   }
@@ -1094,6 +1104,7 @@
           </div>
         </div>
         <button id="addBtn">Ajouter l'article</button>
+        <button id="cancelEditItemBtn" style="display:none; background:#3A2438; margin-top:8px;">Annuler la modification</button>
       </div>
 
       <div class="card">
@@ -1700,6 +1711,7 @@
 
   // ---- Produits qui se revendent facilement ----
   let editingProductId = null;
+  let editingItemId = null;
   const prodPhotoInput = document.getElementById('prodPhoto');
   const prodPhotoPreview = document.getElementById('prodPhotoPreview');
   if (prodPhotoInput) {
@@ -2056,6 +2068,19 @@
     });
     if (error) console.error(error);
   }
+  async function updateItem(id, item) {
+    const { error } = await supabaseClient.from('items').update({
+      buy_name: item.buyName,
+      buy_price: item.buyPrice,
+      sell_name: item.sellName,
+      sell_price: item.sellPrice,
+      buy_date: item.buyDate,
+      sell_date: item.sellDate,
+      categorie: item.categorie
+    }).eq('id', id);
+    if (error) console.error(error);
+    return error;
+  }
   async function deleteItem(id) {
     const { error } = await supabaseClient.from('items').delete().eq('id', id);
     if (error) console.error(error);
@@ -2198,11 +2223,31 @@
             </div>
             <div class="right">
               <div class="margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
-              <button class="del" data-id="${item.id}">✕</button>
+              <div class="item-actions">
+                <button class="edit-item" data-id="${item.id}">✎</button>
+                <button class="del" data-id="${item.id}">✕</button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
+      list.querySelectorAll('.edit-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = filteredItems.find(i => i.id === btn.dataset.id);
+          if (!item) return;
+          editingItemId = item.id;
+          document.getElementById('buyName').value = item.buyName || '';
+          document.getElementById('buyPrice').value = item.buyPrice;
+          document.getElementById('sellName').value = item.sellName || '';
+          document.getElementById('sellPrice').value = item.sellPrice;
+          document.getElementById('buyDate').value = item.buyDate || '';
+          document.getElementById('sellDate').value = item.sellDate || '';
+          document.getElementById('itemCategorie').value = item.categorie || 'Autre';
+          document.getElementById('addBtn').textContent = 'Enregistrer les modifications';
+          document.getElementById('cancelEditItemBtn').style.display = 'block';
+          document.querySelector('#tab-suivi .card:nth-of-type(1)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
       list.querySelectorAll('.del').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('Supprimer cet article de ton historique ?')) return;
@@ -2558,6 +2603,19 @@
     });
   }
 
+  function resetItemForm() {
+    document.getElementById('buyName').value = '';
+    document.getElementById('buyPrice').value = '';
+    document.getElementById('sellName').value = '';
+    document.getElementById('sellPrice').value = '';
+    document.getElementById('buyDate').value = '';
+    document.getElementById('sellDate').value = '';
+    document.getElementById('itemCategorie').value = 'Vêtements';
+    document.getElementById('addBtn').textContent = 'Ajouter l\'article';
+    document.getElementById('cancelEditItemBtn').style.display = 'none';
+    editingItemId = null;
+  }
+
   document.getElementById('addBtn').addEventListener('click', async () => {
     const buyName = document.getElementById('buyName').value.trim();
     const buyPrice = parseFloat(document.getElementById('buyPrice').value);
@@ -2574,16 +2632,18 @@
       return;
     }
 
-    await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
+    if (editingItemId) {
+      await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
+    } else {
+      await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
+    }
 
-    document.getElementById('buyName').value = '';
-    document.getElementById('buyPrice').value = '';
-    document.getElementById('sellName').value = '';
-    document.getElementById('sellPrice').value = '';
-    document.getElementById('buyDate').value = '';
-    document.getElementById('sellDate').value = '';
-
+    resetItemForm();
     render();
+  });
+
+  document.getElementById('cancelEditItemBtn').addEventListener('click', () => {
+    resetItemForm();
   });
 
   window.addEventListener('resize', () => render());
