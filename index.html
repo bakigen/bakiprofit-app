@@ -149,6 +149,59 @@
     color: var(--text);
     white-space: nowrap;
   }
+
+  .example-progress { display: flex; flex-direction: column; gap: 10px; }
+  .example-progress-item {
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+  .ep-name {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--green);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .ep-value { font-size: 0.85rem; color: var(--text); }
+
+  .faq-item {
+    border-bottom: 1px solid #3A2438;
+    padding: 12px 0;
+  }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-q {
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .faq-a {
+    font-size: 0.83rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  .lifetime-badge {
+    display: inline-block;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .trust-section-icon { font-size: 1.4rem; margin-bottom: 6px; }
+
   .landing-points li {
     display: flex;
     align-items: flex-start;
@@ -1087,6 +1140,25 @@
           <div class="mmargin">+25€</div>
         </div>
       </div>
+
+      <div class="landing-section">
+        <h3>💡 Exemple de progression possible</h3>
+        <p style="font-style:italic; font-size:0.78rem; margin-bottom:12px;">Ceci est un exemple illustratif à titre indicatif, pas un témoignage réel.</p>
+        <div class="example-progress">
+          <div class="example-progress-item">
+            <span class="ep-name">Débutant·e</span>
+            <span class="ep-value">Quelques articles/mois, on prend ses marques</span>
+          </div>
+          <div class="example-progress-item">
+            <span class="ep-name">Après 1 mois</span>
+            <span class="ep-value">Méthode rodée grâce à la Formation, premiers bénéfices réguliers</span>
+          </div>
+          <div class="example-progress-item">
+            <span class="ep-name">Après 2-3 mois</span>
+            <span class="ep-value">Rythme de vente plus soutenu, suivi précis grâce à BAKIPROFIT</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="landing-tab-panel" id="ltab-fonctions">
@@ -1116,6 +1188,17 @@
 
     <div class="landing-tab-panel" id="ltab-tarifs">
       <div class="landing-section">
+        <div class="trust-section-icon">🔒</div>
+        <h3>Pourquoi nous faire confiance</h3>
+        <p>Ton compte est personnel et protégé par mot de passe : personne d'autre que toi n'a accès à tes données (achats, reventes, bénéfices).</p>
+        <ul class="landing-points" style="margin-top:0;">
+          <li><span class="dot">✓</span> Connexion sécurisée par compte individuel, aucune donnée partagée entre utilisateurs</li>
+          <li><span class="dot">✓</span> Fonction "mot de passe oublié" pour ne jamais rester bloqué·e hors de ton compte</li>
+          <li><span class="dot">✓</span> Un onglet Aide avec contact direct si tu as la moindre question ou le moindre souci</li>
+        </ul>
+      </div>
+
+      <div class="landing-section">
         <h3>💰 Le programme d'affiliation</h3>
         <p>En plus du suivi de tes bénéfices, ton compte BAKIPROFIT te donne accès à un onglet Affiliations : parraine tes proches et touche une commission à chaque vente réalisée grâce à toi.</p>
         <ul class="landing-points" style="margin-top:0;">
@@ -1126,22 +1209,42 @@
       </div>
 
       <div class="landing-section">
-        <h3>Tarifs</h3>
+        <h3>❓ Questions fréquentes</h3>
+        <div class="faq-item">
+          <div class="faq-q">Combien de temps avant d'être rentable ?</div>
+          <p class="faq-a">Ça dépend de ton investissement de départ et du temps que tu y consacres. La Formation intégrée t'aide à structurer ta méthode rapidement, et BAKIPROFIT te permet de suivre précisément ta rentabilité dès le premier article.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Faut-il un stock de départ pour se lancer ?</div>
+          <p class="faq-a">Non. Tu peux commencer avec un seul article, ou même sans rien acheter à l'avance grâce à la méthode du dropshipping expliquée dans la Formation.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Dois-je choisir entre BAKIGEN et BAKIPROFIT ?</div>
+          <p class="faq-a">Non, tu peux prendre les deux séparément ou en pack à prix réduit. Ils fonctionnent très bien ensemble : BAKIGEN pour générer tes annonces, BAKIPROFIT pour suivre ta rentabilité.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">L'accès est-il limité dans le temps ?</div>
+          <p class="faq-a">Non, aucun abonnement : un seul paiement te donne un accès à vie à l'application que tu choisis.</p>
+        </div>
+      </div>
+
+      <div class="landing-section">
+        <h3>Tarifs <span class="lifetime-badge">Accès à vie</span></h3>
         <ul class="landing-points" style="margin-top:0;">
           <li>
             <span class="dot">✓</span>
-            <span>BAKIPROFIT seul — <strong style="color:var(--green);">19,90€</strong> (accès à vie)</span>
+            <span>BAKIPROFIT seul — <strong style="color:var(--green);">19,90€</strong></span>
           </li>
           <li>
             <span class="dot">✓</span>
-            <span>BAKIGEN seul — <strong style="color:var(--green);">24,90€</strong> (accès à vie)</span>
+            <span>BAKIGEN seul — <strong style="color:var(--green);">24,90€</strong></span>
           </li>
           <li>
             <span class="dot">✓</span>
-            <span>Pack BAKIGEN + BAKIPROFIT — <strong style="color:var(--green);">40€</strong> (accès à vie)</span>
+            <span>Pack BAKIGEN + BAKIPROFIT — <strong style="color:var(--green);">40€</strong></span>
           </li>
         </ul>
-        <p style="margin-top:12px; margin-bottom:0;">Pour l'achat, contacte-nous directement sur Instagram 👇</p>
+        <p style="margin-top:12px; margin-bottom:0;">Un seul paiement, aucun abonnement. Pour l'achat, contacte-nous directement sur Instagram 👇</p>
       </div>
 
       <div class="landing-section" style="text-align:center;">
