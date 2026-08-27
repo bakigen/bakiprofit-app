@@ -46,6 +46,31 @@
   }
   .tagline { text-align: center; color: var(--muted); margin-bottom: 24px; font-size: 0.9rem; }
 
+  .quick-auth-row {
+    display: flex;
+    gap: 10px;
+    max-width: 400px;
+    margin: -10px auto 24px;
+  }
+  .quick-auth-btn {
+    flex: 1;
+    margin: 0;
+    padding: 11px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px solid #4A2E42;
+    background: #1F1219;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .quick-auth-btn:hover { border-color: var(--pink); }
+  .quick-auth-btn.primary {
+    background: linear-gradient(90deg, var(--pink), var(--pink-deep));
+    border: none;
+    color: white;
+  }
+
   /* ---- Landing / présentation avant connexion ---- */
   .landing { margin-bottom: 26px; }
   .landing-section {
@@ -406,6 +431,11 @@
   </div>
   <div class="logo">BAKIPROFIT</div>
   <div class="tagline">Suivi des achats/reventes & bénéfices</div>
+
+  <div class="quick-auth-row">
+    <button type="button" class="quick-auth-btn" id="quickLoginBtn">Connexion</button>
+    <button type="button" class="quick-auth-btn" id="quickSignupBtn">Inscription</button>
+  </div>
 
   <!-- Présentation détaillée avant connexion -->
   <div class="landing" id="landingBlock">
@@ -791,6 +821,15 @@
   }
   tabLoginBtn.addEventListener('click', () => setAuthMode('login'));
   tabSignupBtn.addEventListener('click', () => setAuthMode('signup'));
+
+  document.getElementById('quickLoginBtn').addEventListener('click', () => {
+    setAuthMode('login');
+    authCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.getElementById('quickSignupBtn').addEventListener('click', () => {
+    setAuthMode('signup');
+    authCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   const INVITE_CODE = "bakiprofit2005";
 
