@@ -778,6 +778,11 @@
     color: white;
     border-color: transparent;
   }
+  .products-count {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
   .product-card img {
     width: 100%;
     height: 120px;
@@ -839,6 +844,47 @@
     flex-shrink: 0;
   }
   .logout-top:hover { color: var(--pink); }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 0.88rem;
+    padding: 12px 22px;
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .scroll-top-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-size: 1.2rem;
+    font-weight: 800;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 900;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+  }
 
   .welcome-overlay {
     position: fixed;
@@ -914,6 +960,9 @@
     <button id="welcomeCloseBtn">C'est parti !</button>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
+<button id="scrollTopBtn" class="scroll-top-btn" style="display:none;" type="button">↑</button>
 
 <div class="app">
   <div class="brand" id="brandBlock">
@@ -1283,6 +1332,7 @@
 
       <div class="card">
         <h2>Produits qui se revendent facilement</h2>
+        <p class="products-count" id="productsCount"></p>
         <input type="text" id="prodSearchInput" placeholder="🔍 Rechercher un produit..." style="margin-bottom:12px;">
         <div class="row-2" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
@@ -1575,6 +1625,15 @@
   document.getElementById('welcomeCloseBtn').addEventListener('click', () => {
     localStorage.setItem(WELCOME_SEEN_KEY, 'true');
     document.getElementById('welcomeOverlay').style.display = 'none';
+  });
+
+  // ---- Bouton "Haut de page" flottant ----
+  const scrollTopBtn = document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll', () => {
+    scrollTopBtn.style.display = window.scrollY > 400 ? 'block' : 'none';
+  });
+  scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   const SUPABASE_URL = "https://coymtzrxybjdpyeuxaaa.supabase.co";
@@ -2008,6 +2067,14 @@
       filtered = filtered.filter(p => p.buy_price >= 10 && p.buy_price <= 30);
     } else if (activePriceRange === 'over30') {
       filtered = filtered.filter(p => p.buy_price > 30);
+    }
+    const countEl = document.getElementById('productsCount');
+    if (countEl) {
+      const total = allProductsCache.length;
+      const shown = filtered.length;
+      countEl.textContent = shown === total
+        ? `${total} produit${total > 1 ? 's' : ''} disponible${total > 1 ? 's' : ''}`
+        : `${shown} produit${shown > 1 ? 's' : ''} trouvé${shown > 1 ? 's' : ''} sur ${total}`;
     }
     renderProductsGrid(sortProducts(filtered, sortBy));
   }
@@ -2909,6 +2976,7 @@
       return;
     }
 
+    const wasEditing = !!editingItemId;
     if (editingItemId) {
       await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
     } else {
@@ -2917,11 +2985,23 @@
 
     resetItemForm();
     render();
+    showToast(wasEditing ? '✓ Article modifié !' : '✓ Article ajouté !');
   });
 
   document.getElementById('cancelEditItemBtn').addEventListener('click', () => {
     resetItemForm();
   });
+
+  function showToast(message) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => {
+      el.classList.remove('show');
+    }, 2200);
+  }
 
   window.addEventListener('resize', () => render());
 </script>
