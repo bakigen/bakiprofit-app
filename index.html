@@ -327,6 +327,83 @@
     text-align: right;
   }
 
+  .yearly-recap-link {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .yearly-recap-link:hover { color: var(--pink); }
+
+  .yearly-recap-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(7, 5, 8, 0.92);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .yearly-recap-card {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 24px;
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .yearly-recap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .yearly-recap-header h2 {
+    font-size: 1.2rem;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .yearly-recap-header button {
+    width: auto;
+    margin: 0;
+    padding: 4px 10px;
+    background: #1F1219;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .yearly-recap-year-select {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .yearly-recap-year-select a {
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .yearly-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #3A2438;
+  }
+  .yearly-stat-row:last-child { border-bottom: none; }
+  .yearly-stat-label { color: var(--muted); font-size: 0.85rem; }
+  .yearly-stat-value { font-weight: 800; font-size: 1rem; }
+  .yearly-stat-value.pos { color: var(--green); }
+  .yearly-stat-value.neg { color: var(--red); }
+  .yearly-empty { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 20px 0; }
+
   .categorie-summary {
     display: flex;
     flex-wrap: wrap;
@@ -1038,6 +1115,22 @@
         <div class="goal-label" id="goalLabel"></div>
       </div>
 
+      <p class="yearly-recap-link" id="yearlyRecapLink">📅 Voir le bilan annuel</p>
+
+      <div class="yearly-recap-overlay" id="yearlyRecapOverlay" style="display:none;">
+        <div class="yearly-recap-card">
+          <div class="yearly-recap-header">
+            <h2 id="yearlyRecapYear">Bilan 2026</h2>
+            <button id="yearlyRecapCloseBtn" type="button">✕</button>
+          </div>
+          <div class="yearly-recap-year-select">
+            <a id="yearlyRecapPrev">← Année préc.</a>
+            <a id="yearlyRecapNext">Année suiv. →</a>
+          </div>
+          <div id="yearlyRecapBody"></div>
+        </div>
+      </div>
+
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
         <div class="big">
@@ -1712,6 +1805,8 @@
   // ---- Produits qui se revendent facilement ----
   let editingProductId = null;
   let editingItemId = null;
+  let allItemsCache = [];
+  let yearlyRecapCurrentYear = new Date().getFullYear();
   const prodPhotoInput = document.getElementById('prodPhoto');
   const prodPhotoPreview = document.getElementById('prodPhotoPreview');
   if (prodPhotoInput) {
@@ -2196,6 +2291,7 @@
 
   async function render() {
     const items = await getItems();
+    allItemsCache = items;
 
     renderQuickSummary(items);
     renderTipOfDay();
@@ -2332,6 +2428,82 @@
     }
     setMonthlyGoal(val);
     render();
+  });
+
+  // ---- Bilan annuel (calculé à la demande à partir des articles déjà chargés) ----
+  const MONTH_NAMES_FULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  function renderYearlyRecap() {
+    document.getElementById('yearlyRecapYear').textContent = 'Bilan ' + yearlyRecapCurrentYear;
+    const bodyEl = document.getElementById('yearlyRecapBody');
+
+    const yearItems = allItemsCache.filter(i => {
+      const d = i.date ? new Date(i.date) : null;
+      return d && d.getFullYear() === yearlyRecapCurrentYear;
+    });
+
+    if (yearItems.length === 0) {
+      bodyEl.innerHTML = '<div class="yearly-empty">Aucun article enregistré pour cette année.</div>';
+      return;
+    }
+
+    const totalBuy = yearItems.reduce((s, i) => s + i.buyPrice, 0);
+    const totalSell = yearItems.reduce((s, i) => s + i.sellPrice, 0);
+    const totalProfit = totalSell - totalBuy;
+
+    const byMonth = {};
+    yearItems.forEach(i => {
+      const d = new Date(i.date);
+      const m = d.getMonth();
+      byMonth[m] = (byMonth[m] || 0) + (i.sellPrice - i.buyPrice);
+    });
+    let bestMonth = null, bestMonthProfit = -Infinity;
+    Object.keys(byMonth).forEach(m => {
+      if (byMonth[m] > bestMonthProfit) { bestMonthProfit = byMonth[m]; bestMonth = parseInt(m); }
+    });
+
+    const profitCls = totalProfit >= 0 ? 'pos' : 'neg';
+    const bestMonthCls = bestMonthProfit >= 0 ? 'pos' : 'neg';
+
+    bodyEl.innerHTML = `
+      <div class="yearly-stat-row">
+        <span class="yearly-stat-label">Articles vendus</span>
+        <span class="yearly-stat-value">${yearItems.length}</span>
+      </div>
+      <div class="yearly-stat-row">
+        <span class="yearly-stat-label">Total investi (achats)</span>
+        <span class="yearly-stat-value">${fmt(totalBuy)}</span>
+      </div>
+      <div class="yearly-stat-row">
+        <span class="yearly-stat-label">Total encaissé (reventes)</span>
+        <span class="yearly-stat-value">${fmt(totalSell)}</span>
+      </div>
+      <div class="yearly-stat-row">
+        <span class="yearly-stat-label">Bénéfice total</span>
+        <span class="yearly-stat-value ${profitCls}">${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)}</span>
+      </div>
+      <div class="yearly-stat-row">
+        <span class="yearly-stat-label">Meilleur mois</span>
+        <span class="yearly-stat-value ${bestMonthCls}">${bestMonth !== null ? MONTH_NAMES_FULL[bestMonth] + ' (' + (bestMonthProfit >= 0 ? '+' : '') + fmt(bestMonthProfit) + ')' : '—'}</span>
+      </div>
+    `;
+  }
+
+  document.getElementById('yearlyRecapLink').addEventListener('click', () => {
+    yearlyRecapCurrentYear = new Date().getFullYear();
+    renderYearlyRecap();
+    document.getElementById('yearlyRecapOverlay').style.display = 'flex';
+  });
+  document.getElementById('yearlyRecapCloseBtn').addEventListener('click', () => {
+    document.getElementById('yearlyRecapOverlay').style.display = 'none';
+  });
+  document.getElementById('yearlyRecapPrev').addEventListener('click', () => {
+    yearlyRecapCurrentYear--;
+    renderYearlyRecap();
+  });
+  document.getElementById('yearlyRecapNext').addEventListener('click', () => {
+    yearlyRecapCurrentYear++;
+    renderYearlyRecap();
   });
 
   function renderQuickSummary(items) {
