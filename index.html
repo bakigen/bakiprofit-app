@@ -1278,6 +1278,7 @@
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
       if (btn.dataset.tab === 'affiliations') loadCommissions();
       if (btn.dataset.tab === 'produits') loadProducts();
+      if (btn.dataset.tab === 'suivi') render();
     });
   });
 
@@ -1591,6 +1592,10 @@
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    // Le canvas peut être caché (onglet non actif) au moment de l'appel : dans ce cas
+    // sa largeur mesurée est 0, ce qui fausse tous les calculs de tracé. On ne dessine
+    // donc que si le canvas est réellement visible.
+    if (rect.width === 0) return;
     const h = 240;
     canvas.width = rect.width * dpr;
     canvas.height = h * dpr;
