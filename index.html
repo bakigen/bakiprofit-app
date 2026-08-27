@@ -450,6 +450,45 @@
   .formation-module-body li { margin-bottom: 6px; }
   .formation-module-body strong { color: var(--text); }
 
+  .formation-progress-wrap { margin-bottom: 16px; }
+  .formation-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #1F1219;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .formation-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+  }
+  .formation-progress-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+  }
+  .formation-done-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #3A2438;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .formation-done-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--pink);
+    cursor: pointer;
+  }
+
   .help-section {
     background: var(--card);
     border: 1px solid #3A2438;
@@ -505,6 +544,18 @@
   .product-card .pc-prices .pc-buy { color: var(--muted); }
   .product-card .pc-prices .pc-sell { color: var(--green); font-weight: 700; }
   .product-card .pc-date { font-size: 0.68rem; color: var(--muted); margin-bottom: 8px; }
+  .pc-new-badge {
+    display: inline-block;
+    background: linear-gradient(90deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
   .product-card a.pc-link {
     display: block;
     text-align: center;
@@ -863,6 +914,17 @@
 
       <div class="card">
         <h2>Produits qui se revendent facilement</h2>
+        <div class="row-2" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Trier par</label>
+            <select id="prodSortSelect">
+              <option value="recent">Plus récents</option>
+              <option value="margin">Marge décroissante</option>
+              <option value="price_asc">Prix d'achat croissant</option>
+              <option value="price_desc">Prix d'achat décroissant</option>
+            </select>
+          </div>
+        </div>
         <div class="product-grid" id="productsGrid">
           <div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Chargement...</div>
         </div>
@@ -914,7 +976,12 @@
     <div class="tab-panel" id="tab-formation">
       <div class="card">
         <h2>Formation — La méthode achat/revente</h2>
-        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:16px;">Clique sur un module pour l'ouvrir.</p>
+        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:10px;">Clique sur un module pour l'ouvrir.</p>
+
+        <div class="formation-progress-wrap">
+          <div class="formation-progress-bar"><div class="formation-progress-fill" id="formationProgressFill"></div></div>
+          <div class="formation-progress-label" id="formationProgressLabel">0/8 modules terminés</div>
+        </div>
 
         <div class="formation-module" data-fmodule="1">
           <div class="formation-module-header">
@@ -1385,29 +1452,28 @@
     });
   }
 
-  async function loadProducts() {
+  let allProductsCache = [];
+
+  function renderProductsGrid(data) {
     const gridEl = document.getElementById('productsGrid');
+    const isAdmin = currentUserEmail === ADMIN_EMAIL;
 
-    document.getElementById('adminProductCard').style.display =
-      (currentUserEmail === ADMIN_EMAIL) ? 'block' : 'none';
-
-    const { data, error } = await supabaseClient
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error || !data || data.length === 0) {
+    if (!data || data.length === 0) {
       gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun produit pour le moment</div>';
       return;
     }
 
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
     gridEl.innerHTML = data.map(p => {
       const safeLink = p.link && !/^https?:\/\//i.test(p.link) ? 'https://' + p.link : p.link;
-      const isAdmin = currentUserEmail === ADMIN_EMAIL;
+      const isNew = (now - new Date(p.created_at).getTime()) < sevenDaysMs;
       return `
       <div class="product-card">
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
+          ${isNew ? '<span class="pc-new-badge">Nouveau</span>' : ''}
           <div class="pc-title">${p.title}</div>
           <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
           <div class="pc-prices">
@@ -1453,6 +1519,46 @@
       });
     });
   }
+
+  function sortProducts(data, sortBy) {
+    const sorted = [...data];
+    if (sortBy === 'margin') {
+      sorted.sort((a, b) => (b.sell_price - b.buy_price) - (a.sell_price - a.buy_price));
+    } else if (sortBy === 'price_asc') {
+      sorted.sort((a, b) => a.buy_price - b.buy_price);
+    } else if (sortBy === 'price_desc') {
+      sorted.sort((a, b) => b.buy_price - a.buy_price);
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return sorted;
+  }
+
+  async function loadProducts() {
+    const gridEl = document.getElementById('productsGrid');
+
+    document.getElementById('adminProductCard').style.display =
+      (currentUserEmail === ADMIN_EMAIL) ? 'block' : 'none';
+
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun produit pour le moment</div>';
+      return;
+    }
+
+    allProductsCache = data;
+    const sortBy = document.getElementById('prodSortSelect').value;
+    renderProductsGrid(sortProducts(allProductsCache, sortBy));
+  }
+
+  document.getElementById('prodSortSelect').addEventListener('change', () => {
+    const sortBy = document.getElementById('prodSortSelect').value;
+    renderProductsGrid(sortProducts(allProductsCache, sortBy));
+  });
 
   const prodAddBtn = document.getElementById('prodAddBtn');
   if (prodAddBtn) {
@@ -1550,6 +1656,56 @@
       header.closest('.formation-module').classList.toggle('open');
     });
   });
+
+  // ---- Progression de la formation (case à cocher par module + barre) ----
+  const FORMATION_PROGRESS_KEY = 'bakiprofit_formation_progress';
+
+  function getFormationProgress() {
+    try {
+      return JSON.parse(localStorage.getItem(FORMATION_PROGRESS_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function setFormationProgress(progress) {
+    localStorage.setItem(FORMATION_PROGRESS_KEY, JSON.stringify(progress));
+  }
+
+  function updateFormationProgressBar() {
+    const trackedModules = document.querySelectorAll('.formation-module[data-fmodule]:not([data-fmodule="9"])');
+    const progress = getFormationProgress();
+    const total = trackedModules.length;
+    let done = 0;
+    trackedModules.forEach(mod => {
+      if (progress[mod.dataset.fmodule]) done++;
+    });
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const fillEl = document.getElementById('formationProgressFill');
+    const labelEl = document.getElementById('formationProgressLabel');
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (labelEl) labelEl.textContent = `${done}/${total} modules terminés`;
+  }
+
+  document.querySelectorAll('.formation-module[data-fmodule]').forEach(mod => {
+    if (mod.dataset.fmodule === '9') return; // module contact, non comptabilisé
+    const body = mod.querySelector('.formation-module-body');
+    if (!body) return;
+    const progress = getFormationProgress();
+    const isDone = !!progress[mod.dataset.fmodule];
+    const checkWrap = document.createElement('label');
+    checkWrap.className = 'formation-done-check';
+    checkWrap.innerHTML = `<input type="checkbox" ${isDone ? 'checked' : ''}> Marquer ce module comme terminé`;
+    body.appendChild(checkWrap);
+    checkWrap.querySelector('input').addEventListener('change', (e) => {
+      const p = getFormationProgress();
+      p[mod.dataset.fmodule] = e.target.checked;
+      setFormationProgress(p);
+      updateFormationProgressBar();
+    });
+  });
+
+  updateFormationProgressBar();
 
   let currentUserEmail = null;
 
@@ -1763,6 +1919,7 @@
       }).join('');
       list.querySelectorAll('.del').forEach(btn => {
         btn.addEventListener('click', async () => {
+          if (!confirm('Supprimer cet article de ton historique ?')) return;
           await deleteItem(btn.dataset.id);
           render();
         });
