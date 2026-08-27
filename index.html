@@ -383,6 +383,57 @@
     padding: 40px 20px;
   }
 
+  .formation-module {
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .formation-module-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+  .formation-module-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .formation-module-title {
+    flex: 1;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .formation-module-chevron {
+    color: var(--muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .formation-module.open .formation-module-chevron { transform: rotate(180deg); }
+  .formation-module-body {
+    display: none;
+    padding: 0 16px 18px 58px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .formation-module.open .formation-module-body { display: block; }
+  .formation-module-body p { margin-bottom: 10px; }
+  .formation-module-body ul { margin: 0 0 10px 18px; }
+  .formation-module-body li { margin-bottom: 6px; }
+  .formation-module-body strong { color: var(--text); }
+
   .help-section {
     background: var(--card);
     border: 1px solid #3A2438;
@@ -845,9 +896,148 @@
 
     <div class="tab-panel" id="tab-formation">
       <div class="card">
-        <h2>Formation</h2>
-        <div class="formation-placeholder">
-          Le contenu de la formation arrive bientôt 🚀
+        <h2>Formation — La méthode achat/revente</h2>
+        <p style="color:var(--muted); font-size:0.85rem; margin-bottom:16px;">Clique sur un module pour l'ouvrir.</p>
+
+        <div class="formation-module" data-fmodule="1">
+          <div class="formation-module-header">
+            <div class="formation-module-num">📚</div>
+            <div class="formation-module-title">Les bases de l'achat-revente</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>L'achat-revente consiste à acheter des articles à bas prix (vêtements, chaussures, accessoires) pour les revendre plus cher sur des plateformes comme Vinted. Le principe est simple : plus tu achètes bien, plus ta marge est grande.</p>
+            <p>Trois règles à respecter dès le départ :</p>
+            <ul>
+              <li><strong>Ne jamais acheter sans savoir revendre.</strong> Avant d'acheter un article, demande-toi toujours : "est-ce que je sais à quel prix je peux le revendre ?"</li>
+              <li><strong>Commencer petit.</strong> Inutile d'investir beaucoup au départ : quelques dizaines d'euros suffisent pour apprendre et ajuster ta méthode.</li>
+              <li><strong>Tenir ses comptes.</strong> Utilise BAKIPROFIT dès le premier article pour savoir exactement où tu en es (bénéfice réel, pas une impression).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="2">
+          <div class="formation-module-header">
+            <div class="formation-module-num">🔍</div>
+            <div class="formation-module-title">Où trouver des articles à bas prix</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>Les meilleures sources pour acheter à bas prix :</p>
+            <ul>
+              <li><strong>Friperies et dépôts-ventes</strong> — souvent des prix au poids ou très bas, idéal pour trouver du volume.</li>
+              <li><strong>Vide-greniers et brocantes</strong> — négociation possible, articles parfois de marque à prix dérisoire.</li>
+              <li><strong>Vinted lui-même</strong> — repère les vendeurs pressés qui bradent leurs articles (déménagement, besoin d'argent rapide).</li>
+              <li><strong>Ressourceries et associations (Emmaüs, Croix-Rouge...)</strong> — bon rapport qualité/prix, stock qui change souvent.</li>
+              <li><strong>Ventes de printemps/automne entre particuliers</strong> — événements ponctuels où les prix sont bas car les gens veulent vider leurs placards vite.</li>
+            </ul>
+            <p style="margin-bottom:0;">Astuce : privilégie les lieux que tu peux visiter régulièrement, la régularité paie plus que la chance ponctuelle.</p>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="3">
+          <div class="formation-module-header">
+            <div class="formation-module-num">🎯</div>
+            <div class="formation-module-title">Repérer une bonne affaire</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>Avant d'acheter, vérifie systématiquement ces points :</p>
+            <ul>
+              <li><strong>La marque.</strong> Certaines marques se revendent nettement mieux (sportswear reconnu, marques premium, marques tendance du moment). Un article sans marque ou d'une marque inconnue est plus dur à écouler.</li>
+              <li><strong>L'état général.</strong> Vérifie les coutures, taches, trous, odeurs (fumée, humidité). Un défaut caché découvert après achat te coûte de la marge.</li>
+              <li><strong>La taille.</strong> Les tailles standards (S/M/38/40) se vendent plus vite que les tailles très petites ou très grandes.</li>
+              <li><strong>La saisonnalité.</strong> Achète les vêtements d'été en hiver (et inversement) : ils sont moins chers hors saison et tu les revends au bon moment.</li>
+            </ul>
+            <p style="margin-bottom:0;">Utilise l'onglet <strong>Produits</strong> de BAKIPROFIT pour t'inspirer d'articles qui se revendent bien et de leurs marges habituelles.</p>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="4">
+          <div class="formation-module-header">
+            <div class="formation-module-num">💶</div>
+            <div class="formation-module-title">Fixer le bon prix de revente</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>Un prix trop élevé fait fuir les acheteurs, un prix trop bas rogne ta marge inutilement. Pour bien fixer ton prix :</p>
+            <ul>
+              <li><strong>Regarde les annonces similaires</strong> déjà vendues sur Vinted (même marque, même état, même catégorie) pour avoir une fourchette réaliste.</li>
+              <li><strong>Prends en compte l'état</strong> : neuf avec étiquette se vend plus cher que "bon état".</li>
+              <li><strong>Laisse une marge de négociation.</strong> Beaucoup d'acheteurs sur Vinted négocient : prévois un prix légèrement au-dessus de ce que tu veux réellement encaisser.</li>
+              <li><strong>Vise une marge d'au moins x2 à x3</strong> par rapport à ton prix d'achat pour que l'opération reste rentable une fois les frais Vinted déduits.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="5">
+          <div class="formation-module-header">
+            <div class="formation-module-num">✍️</div>
+            <div class="formation-module-title">Rédiger une annonce qui vend</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>Une bonne annonce donne confiance et se fait trouver facilement dans les recherches Vinted.</p>
+            <ul>
+              <li><strong>Titre clair</strong> : marque + type d'article + taille (ex : "Pull Zara femme taille M").</li>
+              <li><strong>Description complète</strong> : matière, coupe, défauts éventuels (toujours les mentionner honnêtement), mesures si utile.</li>
+              <li><strong>Mots-clés pertinents</strong> : pense aux termes que les acheteurs tapent dans la barre de recherche (couleur, style, saison).</li>
+              <li><strong>Catégorie et taille bien renseignées</strong> pour apparaître dans les bons filtres de recherche.</li>
+            </ul>
+            <p style="margin-bottom:0;">Si tu utilises BAKIGEN, ce travail est déjà fait automatiquement à partir de tes photos : titre, description, marque et catégorie générés pour toi.</p>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="6">
+          <div class="formation-module-header">
+            <div class="formation-module-num">📸</div>
+            <div class="formation-module-title">Réussir ses photos</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>La photo est le premier critère qui fait cliquer ou non sur une annonce.</p>
+            <ul>
+              <li><strong>Lumière naturelle</strong> : prends tes photos près d'une fenêtre, jamais avec un flash direct qui dénature les couleurs.</li>
+              <li><strong>Fond neutre</strong> : un mur uni ou un sol propre valorise mieux l'article qu'un fond encombré.</li>
+              <li><strong>Plusieurs angles</strong> : vue d'ensemble, gros plan sur la matière, étiquette de marque et de taille, défauts éventuels.</li>
+              <li><strong>Vêtement repassé et propre</strong> avant la photo — les plis donnent une impression négative même si l'article est en bon état.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="7">
+          <div class="formation-module-header">
+            <div class="formation-module-num">💬</div>
+            <div class="formation-module-title">Gérer messages, négociations et ventes</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>La réactivité et le ton employé font une vraie différence sur Vinted :</p>
+            <ul>
+              <li><strong>Réponds vite</strong> aux messages (idéalement en moins de quelques heures) : un acheteur qui n'a pas de réponse va voir ailleurs.</li>
+              <li><strong>Reste courtois même en cas de négociation basse</strong> : un refus poli laisse la porte ouverte à une vente plus tard.</li>
+              <li><strong>Fixe-toi un prix plancher</strong> avant de négocier, pour ne jamais vendre à perte sous le coup de la pression.</li>
+              <li><strong>Groupe les ventes</strong> quand c'est possible : proposer une réduction sur plusieurs articles achetés ensemble augmente le panier moyen.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="formation-module" data-fmodule="8">
+          <div class="formation-module-header">
+            <div class="formation-module-num">🚀</div>
+            <div class="formation-module-title">Expédition, service client et scaling</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body">
+            <p>Une fois la vente conclue, la qualité du service fait la réputation de ton compte :</p>
+            <ul>
+              <li><strong>Emballe soigneusement</strong> (pochette propre, protection si besoin) et <strong>expédie rapidement</strong>, idéalement sous 48h.</li>
+              <li><strong>Vise les bons avis</strong> : un profil avec de bons retours vend plus vite et permet de fixer des prix légèrement plus élevés.</li>
+              <li><strong>Analyse régulièrement tes chiffres</strong> dans l'onglet Suivi de BAKIPROFIT : quels articles te rapportent le plus, quelle catégorie tourne le mieux.</li>
+              <li><strong>Réinvestis progressivement</strong> tes bénéfices dans plus de stock une fois que ta méthode est rodée, pour augmenter ton volume de vente sans prendre de risque inconsidéré.</li>
+            </ul>
+            <p style="margin-bottom:0;">La rentabilité vient de la répétition d'une bonne méthode plus que d'un coup de chance isolé : reste régulier et ajuste au fur et à mesure.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1324,6 +1514,13 @@
       if (btn.dataset.tab === 'affiliations') loadCommissions();
       if (btn.dataset.tab === 'produits') loadProducts();
       if (btn.dataset.tab === 'suivi') render();
+    });
+  });
+
+  // ---- Modules de formation dépliables ----
+  document.querySelectorAll('.formation-module-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.closest('.formation-module').classList.toggle('open');
     });
   });
 
