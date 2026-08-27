@@ -282,6 +282,18 @@
     margin-bottom: 4px;
   }
 
+  .record-card {
+    background: linear-gradient(135deg, rgba(255, 209, 102, 0.14), rgba(139, 214, 41, 0.08));
+    border: 1px solid #5A4416;
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+    color: var(--text);
+    text-align: center;
+  }
+  .record-card strong { color: #FFD166; }
+
   .goal-card {
     background: var(--card);
     border: 1px solid #3A2438;
@@ -654,6 +666,27 @@
   .formation-module-body ul { margin: 0 0 10px 18px; }
   .formation-module-body li { margin-bottom: 6px; }
   .formation-module-body strong { color: var(--text); }
+
+  .formation-related {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #3A2438;
+    font-size: 0.8rem;
+  }
+  .formation-related-label {
+    display: block;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .formation-related-link {
+    display: block;
+    color: var(--pink);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-bottom: 4px;
+  }
+  .formation-related-link:hover { color: var(--green); }
 
 
   .help-section {
@@ -1105,6 +1138,7 @@
     <div class="tab-panel active" id="tab-suivi">
       <div class="quick-summary" id="quickSummary"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
+      <div class="record-card" id="recordCard" style="display:none;"></div>
 
       <div class="goal-card" id="goalCard">
         <div class="goal-header">
@@ -2087,6 +2121,54 @@
     });
   });
 
+  // ---- Suggestions de modules liés ----
+  const FORMATION_TITLES = {
+    '1': "Les bases de l'achat-revente",
+    '2': "Où trouver des articles à bas prix",
+    '2b': "Le dropshipping (Shein, AliExpress, Temu...)",
+    '4': "Fixer le bon prix de revente",
+    '5': "Rédiger une annonce qui vend",
+    '6': "Réussir ses photos",
+    '7': "Gérer messages, négociations et ventes",
+    '7b': "Relancer une annonce qui ne bouge pas",
+    '8': "Expédition, service client et scaling"
+  };
+  const FORMATION_RELATED = {
+    '1': ['4', '2'],
+    '2': ['2b', '1'],
+    '2b': ['6', '7b'],
+    '4': ['1', '5'],
+    '5': ['6', '4'],
+    '6': ['5', '2b'],
+    '7': ['7b', '8'],
+    '7b': ['7', '4'],
+    '8': ['7', '7b']
+  };
+
+  document.querySelectorAll('.formation-module[data-fmodule]').forEach(mod => {
+    const id = mod.dataset.fmodule;
+    const related = FORMATION_RELATED[id];
+    if (!related) return;
+    const body = mod.querySelector('.formation-module-body');
+    if (!body) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'formation-related';
+    wrap.innerHTML = '<span class="formation-related-label">Tu pourrais aussi lire :</span>' +
+      related.map(rid => `<a class="formation-related-link" data-target="${rid}">${FORMATION_TITLES[rid]}</a>`).join('');
+    body.appendChild(wrap);
+  });
+
+  document.querySelectorAll('.formation-related-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const targetId = link.dataset.target;
+      const targetMod = document.querySelector(`.formation-module[data-fmodule="${targetId}"]`);
+      if (!targetMod) return;
+      document.querySelectorAll('.formation-module').forEach(m => m.classList.remove('open'));
+      targetMod.classList.add('open');
+      targetMod.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   let currentUserEmail = null;
 
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -2295,6 +2377,7 @@
 
     renderQuickSummary(items);
     renderTipOfDay();
+    renderRecord(items);
     renderGoal(items);
     renderCategorieSummary(items);
 
@@ -2379,6 +2462,28 @@
     const dayIndex = Math.floor(today.getTime() / (24 * 60 * 60 * 1000));
     const tip = DAILY_TIPS[dayIndex % DAILY_TIPS.length];
     el.innerHTML = `<span class="tip-label">💡 Conseil du jour</span>${tip}`;
+  }
+
+  function renderRecord(items) {
+    const el = document.getElementById('recordCard');
+    if (!el) return;
+    if (!items || items.length === 0) {
+      el.style.display = 'none';
+      return;
+    }
+    let best = null;
+    items.forEach(i => {
+      const margin = i.sellPrice - i.buyPrice;
+      if (!best || margin > best.margin) {
+        best = { margin, name: i.sellName || i.buyName };
+      }
+    });
+    if (!best || best.margin <= 0) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'block';
+    el.innerHTML = `🏆 Ton record : <strong>+${fmt(best.margin)}</strong> sur ${escapeHtml(best.name)}`;
   }
 
   // ---- Objectif mensuel (stocké sur l'appareil) ----
