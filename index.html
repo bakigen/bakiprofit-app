@@ -369,12 +369,17 @@
     outline: none;
   }
   input:focus, select:focus { border-color: var(--pink); }
-  input:-webkit-autofill {
-    -webkit-text-fill-color: var(--text);
-    -webkit-box-shadow: 0 0 0px 1000px #1F1219 inset;
-    box-shadow: 0 0 0px 1000px #1F1219 inset;
-    caret-color: var(--text);
-    transition: background-color 9999s ease-in-out 0s;
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  input:autofill {
+    -webkit-text-fill-color: var(--text) !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1F1219 inset !important;
+    box-shadow: 0 0 0px 1000px #1F1219 inset !important;
+    caret-color: var(--text) !important;
+    border: 1px solid #4A2E42 !important;
+    transition: background-color 9999s ease-in-out 0s !important;
   }
   button {
     width: 100%;
@@ -1059,6 +1064,12 @@
   }
   .logout-top:hover { color: var(--pink); }
 
+  body.privacy-blur .sensitive-data {
+    filter: blur(7px);
+    user-select: none;
+    transition: filter 0.2s ease;
+  }
+
   .toast {
     position: fixed;
     top: 20px;
@@ -1526,7 +1537,10 @@
   <div id="mainAppContent" style="display:none;">
     <div class="user-badge-row">
       <span class="user-badge" id="userBadge"></span>
-      <a id="logoutLink" class="logout-top">Se déconnecter</a>
+      <div style="display:flex; gap:14px; align-items:center;">
+        <a id="privacyToggleLink" class="logout-top">🙈 Masquer les informations</a>
+        <a id="logoutLink" class="logout-top">Se déconnecter</a>
+      </div>
     </div>
     <div class="last-login-note" id="lastLoginNote"></div>
 
@@ -1539,9 +1553,9 @@
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
-      <div class="quick-summary" id="quickSummary"></div>
+      <div class="quick-summary sensitive-data" id="quickSummary"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
-      <div class="record-card" id="recordCard" style="display:none;"></div>
+      <div class="record-card sensitive-data" id="recordCard" style="display:none;"></div>
 
       <div class="goal-card" id="goalCard">
         <div class="goal-header">
@@ -1549,7 +1563,7 @@
           <a id="goalEditLink">Modifier</a>
         </div>
         <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
-        <div class="goal-label" id="goalLabel"></div>
+        <div class="goal-label sensitive-data" id="goalLabel"></div>
       </div>
 
       <p class="yearly-recap-link" id="yearlyRecapLink">📅 Voir le bilan annuel</p>
@@ -1571,12 +1585,12 @@
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
         <div class="big">
-          <div class="num" id="heroProfit">0€</div>
+          <div class="num sensitive-data" id="heroProfit">0€</div>
           <svg class="arrow" id="heroArrow" viewBox="0 0 24 24" fill="none">
             <path d="M6 18L18 6M18 6H9M18 6V15" stroke="#8BD629" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct" id="heroPct">+0%</span></div>
+        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct sensitive-data" id="heroPct">+0%</span></div>
 
         <select id="metricSelect">
           <option value="profit">Bénéfice</option>
@@ -1587,7 +1601,7 @@
         <select id="periodSelect"></select>
 
         <div class="chart-wrap">
-          <canvas id="chart"></canvas>
+          <canvas id="chart" class="sensitive-data"></canvas>
           <div class="month-labels" id="monthLabels"></div>
         </div>
       </div>
@@ -1649,7 +1663,7 @@
             <option value="Autre">Autre</option>
           </select>
         </div>
-        <div id="categorieSummary" class="categorie-summary"></div>
+        <div id="categorieSummary" class="categorie-summary sensitive-data"></div>
         <div id="itemsList"></div>
       </div>
     </div>
@@ -2409,12 +2423,12 @@
       return `
       <div class="product-card">
         <button class="pc-fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}">${isFav ? '★' : '☆'}</button>
-        ${p.photo_url ? `<img src="${p.photo_url}" alt="${p.title}">` : ''}
+        ${p.photo_url ? `<img class="sensitive-data" src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
           ${isNew ? '<span class="pc-new-badge">Nouveau</span>' : ''}
-          <div class="pc-title">${p.title}</div>
+          <div class="pc-title sensitive-data">${p.title}</div>
           <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
-          <div class="pc-prices">
+          <div class="pc-prices sensitive-data">
             <span class="pc-buy">Achat: ${p.buy_price}€</span> →
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
           </div>
@@ -2770,6 +2784,15 @@
 
   let currentUserEmail = null;
 
+  // ---- Masquer/afficher les informations sensibles (montants, articles, photos) ----
+  const privacyToggleLink = document.getElementById('privacyToggleLink');
+  let privacyHidden = false;
+  privacyToggleLink.addEventListener('click', () => {
+    privacyHidden = !privacyHidden;
+    document.body.classList.toggle('privacy-blur', privacyHidden);
+    privacyToggleLink.textContent = privacyHidden ? '👁️ Afficher les informations' : '🙈 Masquer les informations';
+  });
+
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       // L'utilisateur a cliqué sur le lien reçu par email : on affiche l'écran dédié,
@@ -2996,13 +3019,13 @@
         return `
           <div class="item">
             <div class="info">
-              <div class="name">${escapeHtml(item.sellName || item.buyName)}</div>
-              <div class="prices">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
+              <div class="name sensitive-data">${escapeHtml(item.sellName || item.buyName)}</div>
+              <div class="prices sensitive-data">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
               <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
               ${isLowMargin ? '<span class="item-low-margin-tag">⚠️ Marge < x2</span>' : ''}
             </div>
             <div class="right">
-              <div class="margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
+              <div class="margin ${cls} sensitive-data">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
               <div class="item-actions">
                 <button class="edit-item" data-id="${item.id}">✎</button>
                 <button class="del" data-id="${item.id}">✕</button>
