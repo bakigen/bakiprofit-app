@@ -1569,27 +1569,7 @@
 
   <div id="mainAppContent" style="display:none;">
     <div class="user-badge-row">
-      <div class="privacy-menu-wrap">
-        <button type="button" class="logout-top privacy-menu-btn" id="privacyMenuBtn">🙈 Masquer des infos</button>
-        <div class="privacy-menu-dropdown" id="privacyMenuDropdown" style="display:none;">
-          <label class="privacy-menu-item">
-            <input type="checkbox" data-privacy="amounts" checked>
-            <span>Montants & bénéfices</span>
-          </label>
-          <label class="privacy-menu-item">
-            <input type="checkbox" data-privacy="names" checked>
-            <span>Noms d'articles</span>
-          </label>
-          <label class="privacy-menu-item">
-            <input type="checkbox" data-privacy="chart" checked>
-            <span>Graphique</span>
-          </label>
-          <label class="privacy-menu-item">
-            <input type="checkbox" data-privacy="products" checked>
-            <span>Fiches produits (photos, titres, prix)</span>
-          </label>
-        </div>
-      </div>
+      <span></span>
       <a id="logoutLink" class="logout-top">Se déconnecter</a>
     </div>
     <div class="last-login-note" id="lastLoginNote"></div>
@@ -1603,6 +1583,24 @@
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
+      <div class="privacy-menu-wrap" style="margin-bottom:14px;">
+        <button type="button" class="logout-top privacy-menu-btn" data-menu="suivi">🙈 Masquer des infos</button>
+        <div class="privacy-menu-dropdown" data-dropdown="suivi" style="display:none;">
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="amounts" checked>
+            <span>Montants & bénéfices</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="names" checked>
+            <span>Noms d'articles</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="chart" checked>
+            <span>Graphique</span>
+          </label>
+        </div>
+      </div>
+
       <div class="quick-summary sensitive-amounts" id="quickSummary"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
       <div class="record-card sensitive-amounts sensitive-names" id="recordCard" style="display:none;"></div>
@@ -1750,6 +1748,15 @@
 
       <div class="card">
         <h2>Produits qui se revendent facilement</h2>
+        <div class="privacy-menu-wrap" style="margin-bottom:12px;">
+          <button type="button" class="logout-top privacy-menu-btn" data-menu="produits">🙈 Masquer des infos</button>
+          <div class="privacy-menu-dropdown" data-dropdown="produits" style="display:none;">
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="products" checked>
+              <span>Photos, titres et prix</span>
+            </label>
+          </div>
+        </div>
         <p class="products-count" id="productsCount"></p>
         <input type="text" id="prodSearchInput" placeholder="🔍 Rechercher un produit..." style="margin-bottom:12px;">
         <div class="row-2" style="margin-bottom:14px;">
@@ -2853,7 +2860,7 @@
     document.body.classList.toggle('hide-products', !!prefs.products);
   }
 
-  document.querySelectorAll('#privacyMenuDropdown input[type=checkbox]').forEach(cb => {
+  document.querySelectorAll('.privacy-menu-dropdown input[type=checkbox]').forEach(cb => {
     const prefs = getPrivacyPrefs();
     const key = cb.dataset.privacy;
     // Coché par défaut = masqué. On applique la préférence sauvegardée si elle existe, sinon on garde "coché".
@@ -2865,20 +2872,28 @@
       p[key] = cb.checked;
       localStorage.setItem(PRIVACY_PREFS_KEY, JSON.stringify(p));
       applyPrivacyPrefs();
+      // Synchronise les cases identiques si le même réglage apparaît dans plusieurs menus
+      document.querySelectorAll(`.privacy-menu-dropdown input[data-privacy="${key}"]`).forEach(other => {
+        other.checked = cb.checked;
+      });
     });
   });
 
   applyPrivacyPrefs();
 
-  const privacyMenuBtn = document.getElementById('privacyMenuBtn');
-  const privacyMenuDropdown = document.getElementById('privacyMenuDropdown');
-  privacyMenuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    privacyMenuDropdown.style.display = privacyMenuDropdown.style.display === 'none' ? 'block' : 'none';
+  // Chaque bouton "Masquer des infos" ouvre uniquement son propre menu déroulant.
+  document.querySelectorAll('.privacy-menu-btn').forEach(btn => {
+    const dropdown = btn.parentElement.querySelector('.privacy-menu-dropdown');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdown.style.display !== 'none';
+      document.querySelectorAll('.privacy-menu-dropdown').forEach(d => d.style.display = 'none');
+      dropdown.style.display = isOpen ? 'none' : 'block';
+    });
   });
   document.addEventListener('click', (e) => {
-    if (!privacyMenuDropdown.contains(e.target) && e.target !== privacyMenuBtn) {
-      privacyMenuDropdown.style.display = 'none';
+    if (!e.target.closest('.privacy-menu-wrap')) {
+      document.querySelectorAll('.privacy-menu-dropdown').forEach(d => d.style.display = 'none');
     }
   });
 
