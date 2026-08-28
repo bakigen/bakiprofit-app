@@ -1012,6 +1012,16 @@
     font-size: 0.9rem;
     color: var(--text);
   }
+  .stock-sold-counter {
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 12px;
+    padding: 13px 14px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--green);
+  }
   .stock-qty-badge {
     display: inline-block;
     background: #FFD166;
@@ -1882,6 +1892,33 @@
 
       <div class="card">
         <h2>Mon stock</h2>
+        <div class="row-2" style="margin-bottom:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Affichage</label>
+            <select id="stockViewMode">
+              <option value="actif">Stock actif</option>
+              <option value="vendu">Stock vendu</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>&nbsp;</label>
+            <div class="stock-sold-counter" id="stockSoldCounter">0 article vendu depuis le stock</div>
+          </div>
+        </div>
+        <div class="row-2" id="stockVariantFilters" style="margin-bottom:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Filtrer par couleur</label>
+            <select id="stockColorFilter">
+              <option value="all">Toutes les couleurs</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Filtrer par taille</label>
+            <select id="stockSizeFilter">
+              <option value="all">Toutes les tailles</option>
+            </select>
+          </div>
+        </div>
         <div class="product-grid" id="stockGrid">
           <div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Chargement...</div>
         </div>
@@ -3325,22 +3362,21 @@
     if (error) console.error(error);
   }
 
-  // Vend une unité d'un article en stock : diminue la quantité de 1,
-  // et ne supprime la ligne que lorsqu'il n'en reste plus aucune.
+  // Vend une unité d'un article en stock : diminue la quantité active de 1 et
+  // augmente sold_quantity de 1. La ligne n'est jamais supprimée automatiquement,
+  // ce qui permet de garder un historique consultable dans "Stock vendu".
   async function decrementOrDeleteStock(id) {
     const { data, error: fetchError } = await supabaseClient
       .from('stock')
-      .select('quantity')
+      .select('quantity, sold_quantity')
       .eq('id', id)
       .maybeSingle();
     if (fetchError || !data) return;
     const currentQty = data.quantity || 1;
-    if (currentQty > 1) {
-      const { error } = await supabaseClient.from('stock').update({ quantity: currentQty - 1 }).eq('id', id);
-      if (error) console.error(error);
-    } else {
-      await deleteStockItem(id);
-    }
+    const currentSold = data.sold_quantity || 0;
+    const newQty = Math.max(0, currentQty - 1);
+    const { error } = await supabaseClient.from('stock').update({ quantity: newQty, sold_quantity: currentSold + 1 }).eq('id', id);
+    if (error) console.error(error);
   }
 
   async function loadStock() {
@@ -3351,19 +3387,60 @@
   function renderStockGrid() {
     const gridEl = document.getElementById('stockGrid');
     const countEl = document.getElementById('stockTotalCounter');
-    const totalArticles = allStockCache.reduce((s, it) => s + (it.quantity || 1), 0);
-    const totalValue = allStockCache.reduce((s, it) => s + Number(it.buy_price) * (it.quantity || 1), 0);
-    countEl.innerHTML = `${totalArticles} article${totalArticles > 1 ? 's' : ''} en stock · Valeur : <span class="sensitive-stockPrix">${fmtHtml(totalValue, 'Stock')}</span>`;
+    const soldCountEl = document.getElementById('stockSoldCounter');
+    const viewMode = document.getElementById('stockViewMode').value;
 
-    if (allStockCache.length === 0) {
-      gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun article en stock pour le moment</div>';
+    // Le compteur de ventes est toujours visible, quel que soit le mode affiché.
+    const totalSold = allStockCache.reduce((s, it) => s + (it.sold_quantity || 0), 0);
+    soldCountEl.textContent = totalSold + ' article' + (totalSold > 1 ? 's' : '') + ' vendu' + (totalSold > 1 ? 's' : '') + ' depuis le stock';
+
+    // Filtres couleur/taille : uniquement pertinents en mode "actif"
+    const filtersWrap = document.getElementById('stockVariantFilters');
+    filtersWrap.style.display = viewMode === 'actif' ? 'flex' : 'none';
+
+    const activeRows = allStockCache.filter(s => (s.quantity || 0) > 0);
+    const colorFilterEl = document.getElementById('stockColorFilter');
+    const sizeFilterEl = document.getElementById('stockSizeFilter');
+    const currentColorFilter = colorFilterEl.value;
+    const currentSizeFilter = sizeFilterEl.value;
+    const uniqueColors = [...new Set(activeRows.map(s => s.color).filter(Boolean))];
+    const uniqueSizes = [...new Set(activeRows.map(s => s.size).filter(Boolean))];
+    colorFilterEl.innerHTML = '<option value="all">Toutes les couleurs</option>' +
+      uniqueColors.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    sizeFilterEl.innerHTML = '<option value="all">Toutes les tailles</option>' +
+      uniqueSizes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    colorFilterEl.value = uniqueColors.includes(currentColorFilter) ? currentColorFilter : 'all';
+    sizeFilterEl.value = uniqueSizes.includes(currentSizeFilter) ? currentSizeFilter : 'all';
+
+    // Sélectionne les lignes à afficher selon le mode, puis applique les filtres couleur/taille (mode actif seulement).
+    let rowsToShow = viewMode === 'actif'
+      ? allStockCache.filter(s => (s.quantity || 0) > 0)
+      : allStockCache.filter(s => (s.sold_quantity || 0) > 0);
+
+    if (viewMode === 'actif') {
+      if (colorFilterEl.value !== 'all') rowsToShow = rowsToShow.filter(s => s.color === colorFilterEl.value);
+      if (sizeFilterEl.value !== 'all') rowsToShow = rowsToShow.filter(s => s.size === sizeFilterEl.value);
+    }
+
+    if (viewMode === 'actif') {
+      const totalArticles = rowsToShow.reduce((s, it) => s + (it.quantity || 1), 0);
+      const totalValue = rowsToShow.reduce((s, it) => s + Number(it.buy_price) * (it.quantity || 1), 0);
+      countEl.innerHTML = `${totalArticles} article${totalArticles > 1 ? 's' : ''} en stock · Valeur : <span class="sensitive-stockPrix">${fmtHtml(totalValue, 'Stock')}</span>`;
+    } else {
+      const totalArticles = rowsToShow.reduce((s, it) => s + (it.sold_quantity || 0), 0);
+      const totalValue = rowsToShow.reduce((s, it) => s + Number(it.buy_price) * (it.sold_quantity || 0), 0);
+      countEl.innerHTML = `${totalArticles} article${totalArticles > 1 ? 's' : ''} vendu${totalArticles > 1 ? 's' : ''} · Valeur d'achat : <span class="sensitive-stockPrix">${fmtHtml(totalValue, 'Stock')}</span>`;
+    }
+
+    if (rowsToShow.length === 0) {
+      gridEl.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">${viewMode === 'actif' ? 'Aucun article en stock pour le moment' : 'Aucune vente depuis le stock pour le moment'}</div>`;
       return;
     }
 
     // Regroupe les fiches par titre + prix d'achat : un prix différent reste une fiche à part,
     // même pour un titre identique. À l'intérieur d'un groupe, chaque couleur/taille est une ligne distincte.
     const groups = [];
-    allStockCache.forEach(s => {
+    rowsToShow.forEach(s => {
       const key = s.title.trim().toLowerCase() + '||' + Number(s.buy_price).toFixed(2);
       let group = groups.find(g => g.key === key);
       if (!group) {
@@ -3374,28 +3451,33 @@
       group.rows.push(s);
     });
 
+    const qtyField = viewMode === 'actif' ? 'quantity' : 'sold_quantity';
+
     gridEl.innerHTML = groups.map(g => {
-      const groupQty = g.rows.reduce((s, r) => s + (r.quantity || 1), 0);
+      const groupQty = g.rows.reduce((s, r) => s + (r[qtyField] || 0), 0);
       const rowsHtml = g.rows.map(s => {
         const dateRef = s.buy_date || s.created_at;
         const daysInStock = Math.floor((Date.now() - new Date(dateRef).getTime()) / (24 * 60 * 60 * 1000));
-        const isSleeping = daysInStock >= 3;
+        const isSleeping = viewMode === 'actif' && daysInStock >= 3;
         const variantParts = [];
         if (s.color) variantParts.push(escapeHtml(s.color));
         if (s.size) variantParts.push(escapeHtml(s.size));
         const variantLabel = variantParts.length > 0 ? variantParts.join(' · ') : 'Sans détail';
-        return `
-          <div class="stock-variant-row">
-            <div class="stock-variant-info">
-              <span class="stock-variant-label sensitive-stockTitres">${variantLabel} <span class="stock-qty-badge">x${s.quantity || 1}</span></span>
-              ${isSleeping ? `<span class="stock-sleeping-badge">⏰ ${daysInStock}j</span>` : ''}
-              <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
-            </div>
+        const actionsHtml = viewMode === 'actif' ? `
             <div class="stock-variant-actions">
               <button class="stock-sell-btn" data-id="${s.id}" title="Marquer vendu">✓</button>
               <button class="stock-edit-btn" data-id="${s.id}" title="Modifier">✎</button>
               <button class="stock-delete-btn" data-id="${s.id}" title="Supprimer">🗑</button>
             </div>
+        ` : '';
+        return `
+          <div class="stock-variant-row">
+            <div class="stock-variant-info">
+              <span class="stock-variant-label sensitive-stockTitres">${variantLabel} <span class="stock-qty-badge">x${s[qtyField] || 0}</span></span>
+              ${isSleeping ? `<span class="stock-sleeping-badge">⏰ ${daysInStock}j</span>` : ''}
+              <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
+            </div>
+            ${actionsHtml}
           </div>
         `;
       }).join('');
@@ -3415,6 +3497,8 @@
       </div>
     `;
     }).join('');
+
+    if (viewMode !== 'actif') return;
 
     document.querySelectorAll('.stock-sell-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3463,6 +3547,10 @@
       });
     });
   }
+
+  document.getElementById('stockViewMode').addEventListener('change', renderStockGrid);
+  document.getElementById('stockColorFilter').addEventListener('change', renderStockGrid);
+  document.getElementById('stockSizeFilter').addEventListener('change', renderStockGrid);
 
   function resetStockForm() {
     editingStockId = null;
