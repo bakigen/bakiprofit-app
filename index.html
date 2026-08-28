@@ -1045,6 +1045,22 @@
     margin-top: 8px;
     display: none;
   }
+  .item-photo-from-stock {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 12px;
+    padding: 8px 12px;
+  }
+  .item-photo-from-stock img {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  .item-photo-from-stock span { flex: 1; font-size: 0.82rem; color: var(--muted); }
+  .item-photo-from-stock a { color: var(--pink); font-size: 0.78rem; cursor: pointer; text-decoration: underline; }
   .user-badge-row {
     display: flex;
     align-items: center;
@@ -1073,7 +1089,10 @@
   body.hide-prixProduits .sensitive-prixProduits,
   body.hide-montantAffiliation .sensitive-montantAffiliation,
   body.hide-nomFilleul .sensitive-nomFilleul,
-  body.hide-textesFormation .sensitive-textesFormation {
+  body.hide-textesFormation .sensitive-textesFormation,
+  body.hide-stockPhotos .sensitive-stockPhotos,
+  body.hide-stockTitres .sensitive-stockTitres,
+  body.hide-stockPrix .sensitive-stockPrix {
     filter: blur(7px);
     user-select: none;
     transition: filter 0.2s ease;
@@ -1582,6 +1601,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="suivi">Suivi</button>
+      <button class="tab-btn" data-tab="stock">Stock</button>
       <button class="tab-btn" data-tab="produits">Produits<span class="tab-dot" id="produitsDot" style="display:none;"></span></button>
       <button class="tab-btn" data-tab="affiliations">Affiliations</button>
       <button class="tab-btn" data-tab="formation">Formation<span class="tab-dot" id="formationDot" style="display:none;"></span></button>
@@ -1666,6 +1686,18 @@
 
       <div class="card">
         <h2>Enregistrer un article</h2>
+        <div class="field" id="itemPhotoFromStockWrap" style="display:none;">
+          <div class="item-photo-from-stock">
+            <img id="itemPhotoFromStockPreview">
+            <span>Photo reprise du stock</span>
+            <a id="itemPhotoFromStockCancel">✕ Retirer</a>
+          </div>
+        </div>
+        <div class="field">
+          <label>Photo (optionnel)</label>
+          <input type="file" id="itemPhoto" accept="image/*">
+          <img id="itemPhotoPreview" class="product-photo-preview">
+        </div>
         <div class="row-2">
           <div class="field">
             <label>Nom (achat)</label>
@@ -1723,6 +1755,59 @@
         </div>
         <div id="categorieSummary" class="categorie-summary sensitive-benefice"></div>
         <div id="itemsList"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-stock">
+      <div class="privacy-menu-wrap" style="margin-bottom:14px;">
+        <button type="button" class="logout-top privacy-menu-btn" data-menu="stock">🙈 Masquer des infos</button>
+        <div class="privacy-menu-dropdown" data-dropdown="stock" style="display:none;">
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="stockPhotos" checked>
+            <span>Photos</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="stockTitres" checked>
+            <span>Titres</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="stockPrix" checked>
+            <span>Prix d'achat</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 id="stockFormTitle">Ajouter un article au stock</h2>
+        <div class="field">
+          <label>Photo (optionnel)</label>
+          <input type="file" id="stockPhoto" accept="image/*">
+          <img id="stockPhotoPreview" class="product-photo-preview">
+        </div>
+        <div class="field">
+          <label>Titre de l'article</label>
+          <input type="text" id="stockTitle" placeholder="ex: Robe Zara fleurie">
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Prix d'achat</label>
+            <input type="number" id="stockBuyPrice" placeholder="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Date d'achat</label>
+            <input type="date" id="stockBuyDate">
+          </div>
+        </div>
+        <button id="stockAddBtn">Ajouter au stock</button>
+        <button id="stockCancelEditBtn" style="display:none; background:#3A2438; margin-top:8px;">Annuler la modification</button>
+      </div>
+
+      <div class="card">
+        <h2>Mon stock</h2>
+        <p class="products-count" id="stockCount"></p>
+        <div class="product-grid" id="stockGrid">
+          <div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Chargement...</div>
+        </div>
       </div>
     </div>
 
@@ -2745,6 +2830,7 @@
       if (btn.dataset.tab === 'produits') { loadProducts(); markProduitsSeen(); }
       if (btn.dataset.tab === 'suivi') render();
       if (btn.dataset.tab === 'formation') markFormationSeen();
+      if (btn.dataset.tab === 'stock') loadStock();
     });
   });
 
@@ -2904,6 +2990,9 @@
     document.body.classList.toggle('hide-montantAffiliation', !!prefs.montantAffiliation);
     document.body.classList.toggle('hide-nomFilleul', !!prefs.nomFilleul);
     document.body.classList.toggle('hide-textesFormation', !!prefs.textesFormation);
+    document.body.classList.toggle('hide-stockPhotos', !!prefs.stockPhotos);
+    document.body.classList.toggle('hide-stockTitres', !!prefs.stockTitres);
+    document.body.classList.toggle('hide-stockPrix', !!prefs.stockPrix);
   }
 
   document.querySelectorAll('.privacy-menu-dropdown input[type=checkbox]').forEach(cb => {
@@ -3000,6 +3089,7 @@
       buyDate: row.buy_date,
       sellDate: row.sell_date,
       categorie: row.categorie || 'Autre',
+      photoUrl: row.photo_url,
       date: row.sell_date || row.buy_date || row.created_at
     }));
   }
@@ -3014,12 +3104,13 @@
       sell_price: item.sellPrice,
       buy_date: item.buyDate,
       sell_date: item.sellDate,
-      categorie: item.categorie
+      categorie: item.categorie,
+      photo_url: item.photoUrl
     });
     if (error) console.error(error);
   }
   async function updateItem(id, item) {
-    const { error } = await supabaseClient.from('items').update({
+    const payload = {
       buy_name: item.buyName,
       buy_price: item.buyPrice,
       sell_name: item.sellName,
@@ -3027,13 +3118,243 @@
       buy_date: item.buyDate,
       sell_date: item.sellDate,
       categorie: item.categorie
-    }).eq('id', id);
+    };
+    if (item.photoUrl !== undefined) payload.photo_url = item.photoUrl;
+    const { error } = await supabaseClient.from('items').update(payload).eq('id', id);
     if (error) console.error(error);
     return error;
   }
   async function deleteItem(id) {
     const { error } = await supabaseClient.from('items').delete().eq('id', id);
     if (error) console.error(error);
+  }
+
+  // ---- Gestion du Stock ----
+  let allStockCache = [];
+  let editingStockId = null;
+  let carriedStockPhotoUrl = null;
+  let carriedFromStockId = null;
+
+  async function getStock() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return [];
+    const { data, error } = await supabaseClient
+      .from('stock')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data;
+  }
+
+  async function addStockItem(entry) {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    const { error } = await supabaseClient.from('stock').insert({
+      user_id: session.user.id,
+      title: entry.title,
+      buy_price: entry.buyPrice,
+      buy_date: entry.buyDate,
+      photo_url: entry.photoUrl
+    });
+    if (error) console.error(error);
+    return error;
+  }
+
+  async function updateStockItem(id, entry) {
+    const payload = { title: entry.title, buy_price: entry.buyPrice, buy_date: entry.buyDate };
+    if (entry.photoUrl !== undefined) payload.photo_url = entry.photoUrl;
+    const { error } = await supabaseClient.from('stock').update(payload).eq('id', id);
+    if (error) console.error(error);
+    return error;
+  }
+
+  async function deleteStockItem(id) {
+    const { error } = await supabaseClient.from('stock').delete().eq('id', id);
+    if (error) console.error(error);
+  }
+
+  async function loadStock() {
+    allStockCache = await getStock();
+    renderStockGrid();
+  }
+
+  function renderStockGrid() {
+    const gridEl = document.getElementById('stockGrid');
+    const countEl = document.getElementById('stockCount');
+    countEl.textContent = allStockCache.length + ' article' + (allStockCache.length > 1 ? 's' : '') + ' en stock';
+
+    if (allStockCache.length === 0) {
+      gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun article en stock pour le moment</div>';
+      return;
+    }
+
+    gridEl.innerHTML = allStockCache.map(s => `
+      <div class="product-card">
+        ${s.photo_url ? `<img class="sensitive-stockPhotos" src="${s.photo_url}" alt="${escapeHtml(s.title)}">` : ''}
+        <div class="pc-body">
+          <div class="pc-title sensitive-stockTitres">${escapeHtml(s.title)}</div>
+          <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
+          <div class="pc-prices sensitive-stockPrix">
+            <span class="pc-buy">Achat : ${fmt(Number(s.buy_price))}</span>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px;">
+            <button class="stock-sell-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem;">✓ Marquer vendu</button>
+            <button class="stock-edit-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A2438;">Modifier</button>
+            <button class="stock-delete-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A1F2E; color:#F87171;">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.stock-sell-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const stockItem = allStockCache.find(s => s.id === btn.dataset.id);
+        if (!stockItem) return;
+        document.getElementById('buyName').value = stockItem.title;
+        document.getElementById('buyPrice').value = stockItem.buy_price;
+        document.getElementById('buyDate').value = stockItem.buy_date || '';
+        carriedStockPhotoUrl = stockItem.photo_url || null;
+        carriedFromStockId = stockItem.id;
+        if (carriedStockPhotoUrl) {
+          document.getElementById('itemPhotoFromStockPreview').src = carriedStockPhotoUrl;
+          document.getElementById('itemPhotoFromStockWrap').style.display = 'block';
+        }
+        document.querySelector('.tab-btn[data-tab="suivi"]').click();
+        document.querySelector('#tab-suivi .card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    document.querySelectorAll('.stock-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const stockItem = allStockCache.find(s => s.id === btn.dataset.id);
+        if (!stockItem) return;
+        editingStockId = stockItem.id;
+        document.getElementById('stockTitle').value = stockItem.title;
+        document.getElementById('stockBuyPrice').value = stockItem.buy_price;
+        document.getElementById('stockBuyDate').value = stockItem.buy_date || '';
+        if (stockItem.photo_url) {
+          document.getElementById('stockPhotoPreview').src = stockItem.photo_url;
+          document.getElementById('stockPhotoPreview').style.display = 'block';
+        }
+        document.getElementById('stockFormTitle').textContent = 'Modifier l\'article';
+        document.getElementById('stockAddBtn').textContent = 'Enregistrer les modifications';
+        document.getElementById('stockCancelEditBtn').style.display = 'block';
+        document.querySelector('#tab-stock .card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    document.querySelectorAll('.stock-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Supprimer cet article du stock ?')) return;
+        await deleteStockItem(btn.dataset.id);
+        loadStock();
+      });
+    });
+  }
+
+  function resetStockForm() {
+    editingStockId = null;
+    document.getElementById('stockTitle').value = '';
+    document.getElementById('stockBuyPrice').value = '';
+    document.getElementById('stockBuyDate').value = '';
+    document.getElementById('stockPhoto').value = '';
+    document.getElementById('stockPhotoPreview').style.display = 'none';
+    document.getElementById('stockFormTitle').textContent = 'Ajouter un article au stock';
+    document.getElementById('stockAddBtn').textContent = 'Ajouter au stock';
+    document.getElementById('stockCancelEditBtn').style.display = 'none';
+  }
+
+  const stockPhotoInput = document.getElementById('stockPhoto');
+  const stockPhotoPreview = document.getElementById('stockPhotoPreview');
+  if (stockPhotoInput) {
+    stockPhotoInput.addEventListener('change', () => {
+      const file = stockPhotoInput.files[0];
+      if (file) {
+        stockPhotoPreview.src = URL.createObjectURL(file);
+        stockPhotoPreview.style.display = 'block';
+      }
+    });
+  }
+
+  const stockAddBtn = document.getElementById('stockAddBtn');
+  if (stockAddBtn) {
+    stockAddBtn.addEventListener('click', async () => {
+      const title = document.getElementById('stockTitle').value.trim();
+      const buyPrice = parseFloat(document.getElementById('stockBuyPrice').value);
+      const buyDate = document.getElementById('stockBuyDate').value || null;
+      const file = stockPhotoInput.files[0];
+
+      if (!title || isNaN(buyPrice)) {
+        alert('Remplis au moins le titre et le prix d\'achat.');
+        return;
+      }
+
+      stockAddBtn.disabled = true;
+      stockAddBtn.textContent = editingStockId ? 'Enregistrement...' : 'Ajout en cours...';
+
+      let photoUrl = undefined;
+      if (file) {
+        const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const { error: uploadError } = await supabaseClient.storage.from('produits').upload(fileName, file);
+        if (uploadError) {
+          alert('Erreur upload photo : ' + uploadError.message);
+          stockAddBtn.disabled = false;
+          stockAddBtn.textContent = editingStockId ? 'Enregistrer les modifications' : 'Ajouter au stock';
+          return;
+        }
+        const { data: publicUrlData } = supabaseClient.storage.from('produits').getPublicUrl(fileName);
+        photoUrl = publicUrlData.publicUrl;
+      }
+
+      let error;
+      if (editingStockId) {
+        error = await updateStockItem(editingStockId, { title, buyPrice, buyDate, photoUrl });
+      } else {
+        error = await addStockItem({ title, buyPrice, buyDate, photoUrl });
+      }
+
+      stockAddBtn.disabled = false;
+
+      if (error) {
+        alert('Erreur : ' + error.message);
+        stockAddBtn.textContent = editingStockId ? 'Enregistrer les modifications' : 'Ajouter au stock';
+        return;
+      }
+
+      resetStockForm();
+      loadStock();
+      showToast(editingStockId ? '✓ Article modifié !' : '✓ Ajouté au stock !');
+    });
+  }
+
+  const stockCancelEditBtn = document.getElementById('stockCancelEditBtn');
+  if (stockCancelEditBtn) {
+    stockCancelEditBtn.addEventListener('click', resetStockForm);
+  }
+
+  // ---- Retirer la photo reprise du stock avant d'enregistrer la vente ----
+  const itemPhotoFromStockCancel = document.getElementById('itemPhotoFromStockCancel');
+  if (itemPhotoFromStockCancel) {
+    itemPhotoFromStockCancel.addEventListener('click', () => {
+      carriedStockPhotoUrl = null;
+      carriedFromStockId = null;
+      document.getElementById('itemPhotoFromStockWrap').style.display = 'none';
+    });
+  }
+
+  const itemPhotoInput = document.getElementById('itemPhoto');
+  const itemPhotoPreview = document.getElementById('itemPhotoPreview');
+  if (itemPhotoInput) {
+    itemPhotoInput.addEventListener('change', () => {
+      const file = itemPhotoInput.files[0];
+      if (file) {
+        itemPhotoPreview.src = URL.createObjectURL(file);
+        itemPhotoPreview.style.display = 'block';
+        // Un nouveau fichier choisi manuellement remplace la photo reprise du stock.
+        carriedStockPhotoUrl = null;
+        document.getElementById('itemPhotoFromStockWrap').style.display = 'none';
+      }
+    });
   }
 
   function fmt(n) {
@@ -3661,6 +3982,11 @@
     document.getElementById('buyDate').value = '';
     document.getElementById('sellDate').value = '';
     document.getElementById('itemCategorie').value = 'Vêtements';
+    document.getElementById('itemPhoto').value = '';
+    document.getElementById('itemPhotoPreview').style.display = 'none';
+    document.getElementById('itemPhotoFromStockWrap').style.display = 'none';
+    carriedStockPhotoUrl = null;
+    carriedFromStockId = null;
     document.getElementById('addBtn').textContent = 'Ajouter l\'article';
     document.getElementById('cancelEditItemBtn').style.display = 'none';
     editingItemId = null;
@@ -3682,13 +4008,42 @@
       return;
     }
 
-    const wasEditing = !!editingItemId;
-    if (editingItemId) {
-      await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
-    } else {
-      await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie });
+    const addBtn = document.getElementById('addBtn');
+    addBtn.disabled = true;
+    const originalBtnText = addBtn.textContent;
+    addBtn.textContent = 'Enregistrement...';
+
+    // Photo : priorité au fichier choisi manuellement, sinon celle reprise du stock.
+    let photoUrl = carriedStockPhotoUrl || undefined;
+    const file = document.getElementById('itemPhoto').files[0];
+    if (file) {
+      const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const { error: uploadError } = await supabaseClient.storage.from('produits').upload(fileName, file);
+      if (uploadError) {
+        alert('Erreur upload photo : ' + uploadError.message);
+        addBtn.disabled = false;
+        addBtn.textContent = originalBtnText;
+        return;
+      }
+      const { data: publicUrlData } = supabaseClient.storage.from('produits').getPublicUrl(fileName);
+      photoUrl = publicUrlData.publicUrl;
     }
 
+    const wasEditing = !!editingItemId;
+    const stockIdToRemove = carriedFromStockId;
+
+    if (editingItemId) {
+      await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl });
+    } else {
+      await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl });
+    }
+
+    // Si la vente provient du stock, on retire l'article du stock une fois enregistré comme vendu.
+    if (stockIdToRemove) {
+      await deleteStockItem(stockIdToRemove);
+    }
+
+    addBtn.disabled = false;
     resetItemForm();
     render();
     showToast(wasEditing ? '✓ Article modifié !' : '✓ Article ajouté !');
