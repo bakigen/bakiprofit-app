@@ -1012,6 +1012,16 @@
     font-size: 0.9rem;
     color: var(--text);
   }
+  .stock-qty-badge {
+    display: inline-block;
+    background: #FFD166;
+    color: #0a0a0a;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 20px;
+    vertical-align: middle;
+  }
   .product-card img {
     width: 100%;
     height: 120px;
@@ -2136,6 +2146,25 @@
           </div>
         </div>
 
+        <div class="formation-module" data-fmodule="8b">
+          <div class="formation-module-header">
+            <div class="formation-module-num">📦</div>
+            <div class="formation-module-title">Bien gérer ton stock</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body sensitive-textesFormation">
+            <p>Un bon suivi de ton stock est aussi important que le suivi de tes ventes : c'est de l'argent immobilisé tant que l'article n'est pas vendu.</p>
+            <ul>
+              <li><strong>Enregistre chaque achat dans l'onglet Stock</strong> dès que tu l'acquiers, avec une photo si possible : tu sauras toujours exactement ce que tu as en réserve et combien ça représente (la valeur totale du stock est affichée en haut de l'onglet).</li>
+              <li><strong>Évite le surstock.</strong> Accumuler beaucoup d'articles non vendus immobilise ton argent et ton espace de stockage. Achète en fonction de ta capacité réelle à vendre, pas juste parce qu'une affaire semble bonne.</li>
+              <li><strong>Surveille les articles qui dorment.</strong> Un article en stock depuis plusieurs semaines sans être mis en vente ou sans trouver preneur mérite d'être réexaminé : la description est-elle bonne ? Les photos ? Le prix envisagé est-il réaliste ?</li>
+              <li><strong>N'hésite pas à baisser un prix qui ne bouge pas.</strong> Un article qui reste invendu longtemps te coûte plus cher en immobilisation qu'une petite baisse de marge — mieux vaut le faire tourner que le garder indéfiniment.</li>
+              <li><strong>Utilise "Marquer vendu"</strong> dès qu'un article part : il passe alors automatiquement dans ton historique de ventes avec toutes ses infos déjà reprises.</li>
+            </ul>
+            <p style="margin-bottom:0;">Un stock bien géré, c'est une meilleure vision de ta rentabilité réelle et moins de mauvaises surprises.</p>
+          </div>
+        </div>
+
         <div class="formation-module" data-fmodule="9">
           <div class="formation-module-header">
             <div class="formation-module-num">❓</div>
@@ -2959,7 +2988,8 @@
     '6': "Réussir ses photos",
     '7': "Gérer messages, négociations et ventes",
     '7b': "Relancer une annonce qui ne bouge pas",
-    '8': "Expédition, service client et scaling"
+    '8': "Expédition, service client et scaling",
+    '8b': "Bien gérer ton stock"
   };
   const FORMATION_RELATED = {
     '1': ['4', '2'],
@@ -2970,7 +3000,8 @@
     '6': ['5', '2b'],
     '7': ['7b', '8'],
     '7b': ['7', '4'],
-    '8': ['7', '7b']
+    '8': ['8b', '7'],
+    '8b': ['7b', '4']
   };
 
   document.querySelectorAll('.formation-module[data-fmodule]').forEach(mod => {
@@ -3187,12 +3218,30 @@
   async function addStockItem(entry) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
+
+    // Si un article du même titre existe déjà en stock, on augmente sa quantité
+    // au lieu de créer une nouvelle ligne en double.
+    const { data: existing, error: findError } = await supabaseClient
+      .from('stock')
+      .select('id, quantity')
+      .eq('user_id', session.user.id)
+      .ilike('title', entry.title.trim());
+
+    if (!findError && existing && existing.length > 0) {
+      const match = existing[0];
+      const newQuantity = (match.quantity || 1) + 1;
+      const { error } = await supabaseClient.from('stock').update({ quantity: newQuantity }).eq('id', match.id);
+      if (error) console.error(error);
+      return error;
+    }
+
     const { error } = await supabaseClient.from('stock').insert({
       user_id: session.user.id,
       title: entry.title,
       buy_price: entry.buyPrice,
       buy_date: entry.buyDate,
-      photo_url: entry.photoUrl
+      photo_url: entry.photoUrl,
+      quantity: 1
     });
     if (error) console.error(error);
     return error;
@@ -3211,6 +3260,24 @@
     if (error) console.error(error);
   }
 
+  // Vend une unité d'un article en stock : diminue la quantité de 1,
+  // et ne supprime la ligne que lorsqu'il n'en reste plus aucune.
+  async function decrementOrDeleteStock(id) {
+    const { data, error: fetchError } = await supabaseClient
+      .from('stock')
+      .select('quantity')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchError || !data) return;
+    const currentQty = data.quantity || 1;
+    if (currentQty > 1) {
+      const { error } = await supabaseClient.from('stock').update({ quantity: currentQty - 1 }).eq('id', id);
+      if (error) console.error(error);
+    } else {
+      await deleteStockItem(id);
+    }
+  }
+
   async function loadStock() {
     allStockCache = await getStock();
     renderStockGrid();
@@ -3219,7 +3286,9 @@
   function renderStockGrid() {
     const gridEl = document.getElementById('stockGrid');
     const countEl = document.getElementById('stockTotalCounter');
-    countEl.textContent = allStockCache.length + ' article' + (allStockCache.length > 1 ? 's' : '') + ' en stock';
+    const totalArticles = allStockCache.reduce((s, it) => s + (it.quantity || 1), 0);
+    const totalValue = allStockCache.reduce((s, it) => s + Number(it.buy_price) * (it.quantity || 1), 0);
+    countEl.innerHTML = `${totalArticles} article${totalArticles > 1 ? 's' : ''} en stock · Valeur : <span class="sensitive-stockPrix">${fmtHtml(totalValue, 'Stock')}</span>`;
 
     if (allStockCache.length === 0) {
       gridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px 0;">Aucun article en stock pour le moment</div>';
@@ -3230,10 +3299,10 @@
       <div class="product-card">
         ${s.photo_url ? `<img class="sensitive-stockPhotos" src="${s.photo_url}" alt="${escapeHtml(s.title)}">` : ''}
         <div class="pc-body">
-          <div class="pc-title sensitive-stockTitres">${escapeHtml(s.title)}</div>
+          <div class="pc-title sensitive-stockTitres">${escapeHtml(s.title)}${(s.quantity || 1) > 1 ? ` <span class="stock-qty-badge">x${s.quantity}</span>` : ''}</div>
           <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
           <div class="pc-prices sensitive-stockPrix">
-            <span class="pc-buy">Achat : ${fmtHtml(Number(s.buy_price), 'Stock')}</span>
+            <span class="pc-buy">Achat : ${fmtHtml(Number(s.buy_price), 'Stock')}${(s.quantity || 1) > 1 ? ' / unité' : ''}</span>
           </div>
           <div style="display:flex; gap:6px; margin-top:8px;">
             <button class="stock-sell-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem;">✓ Marquer vendu</button>
@@ -4089,9 +4158,9 @@
       await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl });
     }
 
-    // Si la vente provient du stock, on retire l'article du stock une fois enregistré comme vendu.
+    // Si la vente provient du stock, on diminue la quantité (ou on retire l'article s'il n'en reste plus).
     if (stockIdToRemove) {
-      await deleteStockItem(stockIdToRemove);
+      await decrementOrDeleteStock(stockIdToRemove);
     }
 
     addBtn.disabled = false;
