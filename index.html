@@ -1064,10 +1064,43 @@
   }
   .logout-top:hover { color: var(--pink); }
 
-  body.privacy-blur .sensitive-data {
+  body.hide-amounts .sensitive-amounts,
+  body.hide-names .sensitive-names,
+  body.hide-chart .sensitive-chart,
+  body.hide-products .sensitive-products {
     filter: blur(7px);
     user-select: none;
     transition: filter 0.2s ease;
+  }
+
+  .privacy-menu-wrap { position: relative; }
+  .privacy-menu-btn { margin: 0; cursor: pointer; }
+  .privacy-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    z-index: 1100;
+    min-width: 230px;
+  }
+  .privacy-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    font-size: 0.82rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .privacy-menu-item input {
+    width: auto;
+    margin: 0;
+    accent-color: var(--pink);
   }
 
   .toast {
@@ -1536,11 +1569,28 @@
 
   <div id="mainAppContent" style="display:none;">
     <div class="user-badge-row">
-      <span class="user-badge" id="userBadge"></span>
-      <div style="display:flex; gap:14px; align-items:center;">
-        <a id="privacyToggleLink" class="logout-top">🙈 Masquer les informations</a>
-        <a id="logoutLink" class="logout-top">Se déconnecter</a>
+      <div class="privacy-menu-wrap">
+        <button type="button" class="logout-top privacy-menu-btn" id="privacyMenuBtn">🙈 Masquer des infos</button>
+        <div class="privacy-menu-dropdown" id="privacyMenuDropdown" style="display:none;">
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="amounts" checked>
+            <span>Montants & bénéfices</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="names" checked>
+            <span>Noms d'articles</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="chart" checked>
+            <span>Graphique</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="products" checked>
+            <span>Fiches produits (photos, titres, prix)</span>
+          </label>
+        </div>
       </div>
+      <a id="logoutLink" class="logout-top">Se déconnecter</a>
     </div>
     <div class="last-login-note" id="lastLoginNote"></div>
 
@@ -1553,9 +1603,9 @@
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
-      <div class="quick-summary sensitive-data" id="quickSummary"></div>
+      <div class="quick-summary sensitive-amounts" id="quickSummary"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
-      <div class="record-card sensitive-data" id="recordCard" style="display:none;"></div>
+      <div class="record-card sensitive-amounts sensitive-names" id="recordCard" style="display:none;"></div>
 
       <div class="goal-card" id="goalCard">
         <div class="goal-header">
@@ -1563,7 +1613,7 @@
           <a id="goalEditLink">Modifier</a>
         </div>
         <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
-        <div class="goal-label sensitive-data" id="goalLabel"></div>
+        <div class="goal-label sensitive-amounts" id="goalLabel"></div>
       </div>
 
       <p class="yearly-recap-link" id="yearlyRecapLink">📅 Voir le bilan annuel</p>
@@ -1585,12 +1635,12 @@
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
         <div class="big">
-          <div class="num sensitive-data" id="heroProfit">0€</div>
+          <div class="num sensitive-amounts" id="heroProfit">0€</div>
           <svg class="arrow" id="heroArrow" viewBox="0 0 24 24" fill="none">
             <path d="M6 18L18 6M18 6H9M18 6V15" stroke="#8BD629" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct sensitive-data" id="heroPct">+0%</span></div>
+        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct sensitive-amounts" id="heroPct">+0%</span></div>
 
         <select id="metricSelect">
           <option value="profit">Bénéfice</option>
@@ -1601,7 +1651,7 @@
         <select id="periodSelect"></select>
 
         <div class="chart-wrap">
-          <canvas id="chart" class="sensitive-data"></canvas>
+          <canvas id="chart" class="sensitive-chart"></canvas>
           <div class="month-labels" id="monthLabels"></div>
         </div>
       </div>
@@ -1663,7 +1713,7 @@
             <option value="Autre">Autre</option>
           </select>
         </div>
-        <div id="categorieSummary" class="categorie-summary sensitive-data"></div>
+        <div id="categorieSummary" class="categorie-summary sensitive-amounts"></div>
         <div id="itemsList"></div>
       </div>
     </div>
@@ -2423,12 +2473,12 @@
       return `
       <div class="product-card">
         <button class="pc-fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}">${isFav ? '★' : '☆'}</button>
-        ${p.photo_url ? `<img class="sensitive-data" src="${p.photo_url}" alt="${p.title}">` : ''}
+        ${p.photo_url ? `<img class="sensitive-products" src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
           ${isNew ? '<span class="pc-new-badge">Nouveau</span>' : ''}
-          <div class="pc-title sensitive-data">${p.title}</div>
+          <div class="pc-title sensitive-products">${p.title}</div>
           <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
-          <div class="pc-prices sensitive-data">
+          <div class="pc-prices sensitive-products">
             <span class="pc-buy">Achat: ${p.buy_price}€</span> →
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
           </div>
@@ -2784,13 +2834,52 @@
 
   let currentUserEmail = null;
 
-  // ---- Masquer/afficher les informations sensibles (montants, articles, photos) ----
-  const privacyToggleLink = document.getElementById('privacyToggleLink');
-  let privacyHidden = false;
-  privacyToggleLink.addEventListener('click', () => {
-    privacyHidden = !privacyHidden;
-    document.body.classList.toggle('privacy-blur', privacyHidden);
-    privacyToggleLink.textContent = privacyHidden ? '👁️ Afficher les informations' : '🙈 Masquer les informations';
+  // ---- Masquer/afficher certaines infos sensibles (menu à cocher, préférence conservée sur l'appareil) ----
+  const PRIVACY_PREFS_KEY = 'bakiprofit_privacy_prefs';
+
+  function getPrivacyPrefs() {
+    try {
+      return JSON.parse(localStorage.getItem(PRIVACY_PREFS_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function applyPrivacyPrefs() {
+    const prefs = getPrivacyPrefs();
+    document.body.classList.toggle('hide-amounts', !!prefs.amounts);
+    document.body.classList.toggle('hide-names', !!prefs.names);
+    document.body.classList.toggle('hide-chart', !!prefs.chart);
+    document.body.classList.toggle('hide-products', !!prefs.products);
+  }
+
+  document.querySelectorAll('#privacyMenuDropdown input[type=checkbox]').forEach(cb => {
+    const prefs = getPrivacyPrefs();
+    const key = cb.dataset.privacy;
+    // Coché par défaut = masqué. On applique la préférence sauvegardée si elle existe, sinon on garde "coché".
+    if (Object.prototype.hasOwnProperty.call(prefs, key)) {
+      cb.checked = prefs[key];
+    }
+    cb.addEventListener('change', () => {
+      const p = getPrivacyPrefs();
+      p[key] = cb.checked;
+      localStorage.setItem(PRIVACY_PREFS_KEY, JSON.stringify(p));
+      applyPrivacyPrefs();
+    });
+  });
+
+  applyPrivacyPrefs();
+
+  const privacyMenuBtn = document.getElementById('privacyMenuBtn');
+  const privacyMenuDropdown = document.getElementById('privacyMenuDropdown');
+  privacyMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    privacyMenuDropdown.style.display = privacyMenuDropdown.style.display === 'none' ? 'block' : 'none';
+  });
+  document.addEventListener('click', (e) => {
+    if (!privacyMenuDropdown.contains(e.target) && e.target !== privacyMenuBtn) {
+      privacyMenuDropdown.style.display = 'none';
+    }
   });
 
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -2808,7 +2897,6 @@
 
     if (session) {
       currentUserEmail = session.user.email;
-      document.getElementById('userBadge').textContent = 'Connecté : ' + session.user.email;
       renderLastLoginNote();
 
       const mustChange = await checkForcedPasswordChange();
@@ -3019,13 +3107,13 @@
         return `
           <div class="item">
             <div class="info">
-              <div class="name sensitive-data">${escapeHtml(item.sellName || item.buyName)}</div>
-              <div class="prices sensitive-data">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
+              <div class="name sensitive-names">${escapeHtml(item.sellName || item.buyName)}</div>
+              <div class="prices sensitive-amounts">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
               <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
               ${isLowMargin ? '<span class="item-low-margin-tag">⚠️ Marge < x2</span>' : ''}
             </div>
             <div class="right">
-              <div class="margin ${cls} sensitive-data">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
+              <div class="margin ${cls} sensitive-amounts">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
               <div class="item-actions">
                 <button class="edit-item" data-id="${item.id}">✎</button>
                 <button class="del" data-id="${item.id}">✕</button>
