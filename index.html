@@ -1719,7 +1719,7 @@
         </div>
         <div class="row-2">
           <div class="field">
-            <label>Nom (achat)</label>
+            <label>Nom</label>
             <input type="text" id="buyName" placeholder="ex: Robe Zara">
           </div>
           <div class="field">
@@ -1746,15 +1746,9 @@
             <input type="date" id="sellDate">
           </div>
         </div>
-        <div class="row-2">
-          <div class="field">
-            <label>Nom (revente)</label>
-            <input type="text" id="sellName" placeholder="ex: Robe Zara">
-          </div>
-          <div class="field">
-            <label>Prix de revente</label>
-            <input type="number" id="sellPrice" placeholder="0" step="0.01">
-          </div>
+        <div class="field">
+          <label>Prix de revente</label>
+          <input type="number" id="sellPrice" placeholder="0" step="0.01">
         </div>
         <button id="addBtn">Ajouter l'article</button>
         <button id="cancelEditItemBtn" style="display:none; background:#3A2438; margin-top:8px;">Annuler la modification</button>
@@ -3541,7 +3535,7 @@
               <div class="margin ${cls} sensitive-benefice">${margin >= 0 ? '+' : ''}${fmtHtml(margin, 'Suivi')}</div>
               <div class="item-actions">
                 <button class="edit-item" data-id="${item.id}">✎</button>
-                <button class="del" data-id="${item.id}">✕</button>
+                <button class="del" data-id="${item.id}" title="Annuler la vente">↩️</button>
               </div>
             </div>
           </div>
@@ -3552,9 +3546,8 @@
           const item = filteredItems.find(i => i.id === btn.dataset.id);
           if (!item) return;
           editingItemId = item.id;
-          document.getElementById('buyName').value = item.buyName || '';
+          document.getElementById('buyName').value = item.sellName || item.buyName || '';
           document.getElementById('buyPrice').value = item.buyPrice;
-          document.getElementById('sellName').value = item.sellName || '';
           document.getElementById('sellPrice').value = item.sellPrice;
           document.getElementById('buyDate').value = item.buyDate || '';
           document.getElementById('sellDate').value = item.sellDate || '';
@@ -3566,9 +3559,18 @@
       });
       list.querySelectorAll('.del').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Supprimer cet article de ton historique ?')) return;
-          await deleteItem(btn.dataset.id);
+          const item = filteredItems.find(i => i.id === btn.dataset.id);
+          if (!item) return;
+          if (!confirm('Annuler cette vente ? L\'article sera remis dans ton Stock.')) return;
+          await addStockItem({
+            title: item.sellName || item.buyName,
+            buyPrice: item.buyPrice,
+            buyDate: item.buyDate || null,
+            photoUrl: item.photoUrl
+          });
+          await deleteItem(item.id);
           render();
+          showToast('↩️ Vente annulée, article remis en stock');
         });
       });
     }
@@ -4021,7 +4023,6 @@
   function resetItemForm() {
     document.getElementById('buyName').value = '';
     document.getElementById('buyPrice').value = '';
-    document.getElementById('sellName').value = '';
     document.getElementById('sellPrice').value = '';
     document.getElementById('buyDate').value = '';
     document.getElementById('sellDate').value = '';
@@ -4039,7 +4040,7 @@
   document.getElementById('addBtn').addEventListener('click', async () => {
     const buyName = document.getElementById('buyName').value.trim();
     const buyPrice = parseFloat(document.getElementById('buyPrice').value);
-    const sellName = document.getElementById('sellName').value.trim();
+    const sellName = buyName;
     const sellPrice = parseFloat(document.getElementById('sellPrice').value);
     const categorie = document.getElementById('itemCategorie').value;
     const today = new Date();
@@ -4048,7 +4049,7 @@
     const sellDate = document.getElementById('sellDate').value || todayIso;
 
     if (!buyName || isNaN(buyPrice) || isNaN(sellPrice)) {
-      alert('Remplis au moins le nom d\'achat, le prix d\'achat et le prix de revente.');
+      alert('Remplis au moins le nom, le prix d\'achat et le prix de revente.');
       return;
     }
 
