@@ -1064,10 +1064,16 @@
   }
   .logout-top:hover { color: var(--pink); }
 
-  body.hide-amounts .sensitive-amounts,
+  body.hide-montant .sensitive-montant,
+  body.hide-benefice .sensitive-benefice,
   body.hide-names .sensitive-names,
   body.hide-chart .sensitive-chart,
-  body.hide-products .sensitive-products {
+  body.hide-photos .sensitive-photos,
+  body.hide-titres .sensitive-titres,
+  body.hide-prixProduits .sensitive-prixProduits,
+  body.hide-montantAffiliation .sensitive-montantAffiliation,
+  body.hide-nomFilleul .sensitive-nomFilleul,
+  body.hide-textesFormation .sensitive-textesFormation {
     filter: blur(7px);
     user-select: none;
     transition: filter 0.2s ease;
@@ -1587,8 +1593,12 @@
         <button type="button" class="logout-top privacy-menu-btn" data-menu="suivi">🙈 Masquer des infos</button>
         <div class="privacy-menu-dropdown" data-dropdown="suivi" style="display:none;">
           <label class="privacy-menu-item">
-            <input type="checkbox" data-privacy="amounts" checked>
-            <span>Montants & bénéfices</span>
+            <input type="checkbox" data-privacy="montant" checked>
+            <span>Montant (achat/revente)</span>
+          </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="benefice" checked>
+            <span>Bénéfice</span>
           </label>
           <label class="privacy-menu-item">
             <input type="checkbox" data-privacy="names" checked>
@@ -1601,9 +1611,9 @@
         </div>
       </div>
 
-      <div class="quick-summary sensitive-amounts" id="quickSummary"></div>
+      <div class="quick-summary sensitive-benefice" id="quickSummary"></div>
       <div class="tip-of-day" id="tipOfDay"></div>
-      <div class="record-card sensitive-amounts sensitive-names" id="recordCard" style="display:none;"></div>
+      <div class="record-card sensitive-benefice sensitive-names" id="recordCard" style="display:none;"></div>
 
       <div class="goal-card" id="goalCard">
         <div class="goal-header">
@@ -1611,7 +1621,7 @@
           <a id="goalEditLink">Modifier</a>
         </div>
         <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
-        <div class="goal-label sensitive-amounts" id="goalLabel"></div>
+        <div class="goal-label sensitive-benefice" id="goalLabel"></div>
       </div>
 
       <p class="yearly-recap-link" id="yearlyRecapLink">📅 Voir le bilan annuel</p>
@@ -1633,12 +1643,12 @@
       <div class="hero">
         <div class="label" id="heroLabel">Bénéfice</div>
         <div class="big">
-          <div class="num sensitive-amounts" id="heroProfit">0€</div>
+          <div class="num sensitive-benefice" id="heroProfit">0€</div>
           <svg class="arrow" id="heroArrow" viewBox="0 0 24 24" fill="none">
             <path d="M6 18L18 6M18 6H9M18 6V15" stroke="#8BD629" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct sensitive-amounts" id="heroPct">+0%</span></div>
+        <div class="sub"><span id="heroPeriodLabel">12 derniers mois</span> <span class="pct sensitive-benefice" id="heroPct">+0%</span></div>
 
         <select id="metricSelect">
           <option value="profit">Bénéfice</option>
@@ -1711,7 +1721,7 @@
             <option value="Autre">Autre</option>
           </select>
         </div>
-        <div id="categorieSummary" class="categorie-summary sensitive-amounts"></div>
+        <div id="categorieSummary" class="categorie-summary sensitive-benefice"></div>
         <div id="itemsList"></div>
       </div>
     </div>
@@ -1752,8 +1762,16 @@
           <button type="button" class="logout-top privacy-menu-btn" data-menu="produits">🙈 Masquer des infos</button>
           <div class="privacy-menu-dropdown" data-dropdown="produits" style="display:none;">
             <label class="privacy-menu-item">
-              <input type="checkbox" data-privacy="products" checked>
-              <span>Photos, titres et prix</span>
+              <input type="checkbox" data-privacy="photos" checked>
+              <span>Photos</span>
+            </label>
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="titres" checked>
+              <span>Titres</span>
+            </label>
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="prixProduits" checked>
+              <span>Prix</span>
             </label>
           </div>
         </div>
@@ -1784,7 +1802,7 @@
     </div>
 
     <div class="tab-panel" id="tab-affiliations">
-      <div class="affiliate-motivation" id="affiliateMotivation" style="display:none;"></div>
+      <div class="affiliate-motivation sensitive-montantAffiliation" id="affiliateMotivation" style="display:none;"></div>
 
       <div class="card" id="adminCommissionCard" style="display:none;">
         <h2>Ajouter une commission</h2>
@@ -1811,6 +1829,19 @@
           Envoie-nous un contact intéressé par BAKI via Instagram (@bakiprofitgen) ou TikTok (@baki.revente). Une fois son achat confirmé, tu touches <strong style="color:var(--green);">5€</strong> pour un pack seul (BAKIGEN ou BAKIPROFIT) et <strong style="color:var(--green);">15€</strong> pour le pack complet à 40€.
         </p>
         <h2>Commissions gagnées</h2>
+        <div class="privacy-menu-wrap" style="margin-bottom:12px;">
+          <button type="button" class="logout-top privacy-menu-btn" data-menu="affiliations">🙈 Masquer des infos</button>
+          <div class="privacy-menu-dropdown" data-dropdown="affiliations" style="display:none;">
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="montantAffiliation" checked>
+              <span>Montant</span>
+            </label>
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="nomFilleul" checked>
+              <span>Nom du filleul</span>
+            </label>
+          </div>
+        </div>
         <table class="comm-table">
           <thead>
             <tr>
@@ -1823,13 +1854,22 @@
             <tr><td colspan="3" style="text-align:center; color:var(--muted); padding:20px 8px;">Chargement...</td></tr>
           </tbody>
         </table>
-        <div style="text-align:right; margin-top:10px; font-weight:800; color:var(--green);" id="commissionsTotal"></div>
+        <div style="text-align:right; margin-top:10px; font-weight:800; color:var(--green);" class="sensitive-montantAffiliation" id="commissionsTotal"></div>
       </div>
     </div>
 
     <div class="tab-panel" id="tab-formation">
       <div class="card">
         <h2>🎓 Formation</h2>
+        <div class="privacy-menu-wrap" style="margin-bottom:12px;">
+          <button type="button" class="logout-top privacy-menu-btn" data-menu="formation">🙈 Masquer des infos</button>
+          <div class="privacy-menu-dropdown" data-dropdown="formation" style="display:none;">
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="textesFormation">
+              <span>Textes explicatifs des modules</span>
+            </label>
+          </div>
+        </div>
         <p style="color:var(--muted); font-size:0.85rem; margin-bottom:16px;">Clique sur un module pour l'ouvrir.</p>
         <div class="formation-complete-badge" id="formationCompleteBadge" style="display:none;">🎉 Formation terminée ! Tu as ouvert tous les modules.</div>
 
@@ -1839,7 +1879,7 @@
             <div class="formation-module-title">Les bases de l'achat-revente</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>L'achat-revente consiste à acheter des articles à bas prix (vêtements, chaussures, accessoires) pour les revendre plus cher sur des plateformes comme Vinted. Le principe est simple : plus tu achètes bien, plus ta marge est grande.</p>
             <p>Trois règles à respecter dès le départ :</p>
             <ul>
@@ -1856,7 +1896,7 @@
             <div class="formation-module-title">Où trouver des articles à bas prix</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Les meilleures sources pour acheter à bas prix :</p>
             <ul>
               <li><strong>Friperies et dépôts-ventes</strong> — souvent des prix au poids ou très bas, idéal pour trouver du volume.</li>
@@ -1874,7 +1914,7 @@
             <div class="formation-module-title">Le dropshipping (Shein, AliExpress, Temu...)</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Grâce aux entrepôts européens de sites comme Shein, AliExpress ou Temu, les livraisons arrivent souvent en moins d'une semaine. Ça ouvre une autre façon de fonctionner : le dropshipping.</p>
             <p>Le principe : tu publies l'annonce d'un article (repéré sur l'un de ces sites) sur Vinted <strong>sans l'avoir acheté ni en ta possession</strong>. Dès qu'un acheteur le commande, tu passes la commande sur le site à ce moment-là seulement, tu le reçois rapidement, puis tu l'expédies à ton acheteur.</p>
             <p style="margin-bottom:0;">L'avantage : tu n'avances aucun argent tant que rien n'est vendu, et tu ne stockes rien à l'avance. Il faut simplement bien anticiper les délais pour que l'acheteur ne trouve pas le délai d'expédition trop long.</p>
@@ -1888,7 +1928,7 @@
             <div class="formation-module-title">Fixer le bon prix de revente</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Un prix trop élevé fait fuir les acheteurs, un prix trop bas rogne ta marge inutilement. Pour bien fixer ton prix :</p>
             <ul>
               <li><strong>Regarde les annonces similaires</strong> déjà vendues sur Vinted (même marque, même état, même catégorie) pour avoir une fourchette réaliste.</li>
@@ -1906,7 +1946,7 @@
             <div class="formation-module-title">Rédiger une annonce qui vend</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Une bonne annonce donne confiance et se fait trouver facilement dans les recherches Vinted.</p>
             <ul>
               <li><strong>Titre clair</strong> : marque + type d'article + taille (ex : "Pull Zara femme taille M").</li>
@@ -1924,7 +1964,7 @@
             <div class="formation-module-title">Réussir ses photos</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>La photo est le premier critère qui fait cliquer ou non sur une annonce.</p>
             <ul>
               <li><strong>Lumière naturelle</strong> : prends tes photos près d'une fenêtre, jamais avec un flash direct qui dénature les couleurs.</li>
@@ -1942,7 +1982,7 @@
             <div class="formation-module-title">Gérer messages, négociations et ventes</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>La réactivité et le ton employé font une vraie différence sur Vinted :</p>
             <ul>
               <li><strong>Réponds vite</strong> aux messages (idéalement en moins de quelques heures) : un acheteur qui n'a pas de réponse va voir ailleurs.</li>
@@ -1958,7 +1998,7 @@
             <div class="formation-module-title">Relancer une annonce qui ne bouge pas</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Une annonce publiée sur Vinted perd en visibilité au fil du temps : plus elle est ancienne, plus elle redescend dans les résultats de recherche. La republier la fait remonter tout en haut, comme une annonce neuve.</p>
             <ul>
               <li><strong>Après 3 jours sans aucune statistique</strong> (ni vue, ni favori, ni offre) : supprime l'annonce et republie-la. Le manque total de visibilité indique qu'elle n'apparaît quasiment plus dans les recherches.</li>
@@ -1974,7 +2014,7 @@
             <div class="formation-module-title">Expédition, service client et scaling</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Une fois la vente conclue, la qualité du service fait la réputation de ton compte :</p>
             <ul>
               <li><strong>Emballe soigneusement</strong> (pochette propre, protection si besoin) et <strong>expédie rapidement</strong>, idéalement sous 48h.</li>
@@ -1992,7 +2032,7 @@
             <div class="formation-module-title">Tu bloques sur quelque chose ?</div>
             <div class="formation-module-chevron">▾</div>
           </div>
-          <div class="formation-module-body">
+          <div class="formation-module-body sensitive-textesFormation">
             <p>Si un point de la formation n'est pas clair, ou si tu bloques sur une situation précise dans ton achat/revente, contacte-moi directement sur Instagram ou TikTok, je te réponds au plus vite 👇</p>
             <p style="margin-bottom:0; text-align:center; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
               <a href="https://instagram.com/bakiprofitgen" target="_blank" class="help-contact-btn">📷 @bakiprofitgen</a>
@@ -2377,8 +2417,8 @@
       const dateStr = d.toLocaleDateString('fr-FR');
       return `<tr>
         <td>${dateStr}</td>
-        <td>${c.filleul}</td>
-        <td class="amount">+${c.amount}€</td>
+        <td class="sensitive-nomFilleul">${c.filleul}</td>
+        <td class="amount sensitive-montantAffiliation">+${c.amount}€</td>
       </tr>`;
     }).join('');
 
@@ -2480,12 +2520,12 @@
       return `
       <div class="product-card">
         <button class="pc-fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}">${isFav ? '★' : '☆'}</button>
-        ${p.photo_url ? `<img class="sensitive-products" src="${p.photo_url}" alt="${p.title}">` : ''}
+        ${p.photo_url ? `<img class="sensitive-photos" src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
           ${isNew ? '<span class="pc-new-badge">Nouveau</span>' : ''}
-          <div class="pc-title sensitive-products">${p.title}</div>
+          <div class="pc-title sensitive-titres">${p.title}</div>
           <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
-          <div class="pc-prices sensitive-products">
+          <div class="pc-prices sensitive-prixProduits">
             <span class="pc-buy">Achat: ${p.buy_price}€</span> →
             <span class="pc-sell">Revente: ${p.sell_price}€</span>
           </div>
@@ -2854,10 +2894,16 @@
 
   function applyPrivacyPrefs() {
     const prefs = getPrivacyPrefs();
-    document.body.classList.toggle('hide-amounts', !!prefs.amounts);
+    document.body.classList.toggle('hide-montant', !!prefs.montant);
+    document.body.classList.toggle('hide-benefice', !!prefs.benefice);
     document.body.classList.toggle('hide-names', !!prefs.names);
     document.body.classList.toggle('hide-chart', !!prefs.chart);
-    document.body.classList.toggle('hide-products', !!prefs.products);
+    document.body.classList.toggle('hide-photos', !!prefs.photos);
+    document.body.classList.toggle('hide-titres', !!prefs.titres);
+    document.body.classList.toggle('hide-prixProduits', !!prefs.prixProduits);
+    document.body.classList.toggle('hide-montantAffiliation', !!prefs.montantAffiliation);
+    document.body.classList.toggle('hide-nomFilleul', !!prefs.nomFilleul);
+    document.body.classList.toggle('hide-textesFormation', !!prefs.textesFormation);
   }
 
   document.querySelectorAll('.privacy-menu-dropdown input[type=checkbox]').forEach(cb => {
@@ -3123,12 +3169,12 @@
           <div class="item">
             <div class="info">
               <div class="name sensitive-names">${escapeHtml(item.sellName || item.buyName)}</div>
-              <div class="prices sensitive-amounts">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
+              <div class="prices sensitive-montant">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
               <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
               ${isLowMargin ? '<span class="item-low-margin-tag">⚠️ Marge < x2</span>' : ''}
             </div>
             <div class="right">
-              <div class="margin ${cls} sensitive-amounts">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
+              <div class="margin ${cls} sensitive-benefice">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
               <div class="item-actions">
                 <button class="edit-item" data-id="${item.id}">✎</button>
                 <button class="del" data-id="${item.id}">✕</button>
