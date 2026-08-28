@@ -1610,17 +1610,19 @@
   <div id="mainAppContent" style="display:none;">
     <div class="user-badge-row">
       <span></span>
-      <a id="logoutLink" class="logout-top">Se déconnecter</a>
+      <div style="display:flex; gap:14px; align-items:center;">
+        <a id="aideTopLink" class="logout-top">Aide</a>
+        <a id="logoutLink" class="logout-top">Se déconnecter</a>
+      </div>
     </div>
     <div class="last-login-note" id="lastLoginNote"></div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="suivi">Suivi</button>
       <button class="tab-btn" data-tab="stock">Stock</button>
+      <button class="tab-btn" data-tab="formation">Formation<span class="tab-dot" id="formationDot" style="display:none;"></span></button>
       <button class="tab-btn" data-tab="produits">Produits<span class="tab-dot" id="produitsDot" style="display:none;"></span></button>
       <button class="tab-btn" data-tab="affiliations">Affiliations</button>
-      <button class="tab-btn" data-tab="formation">Formation<span class="tab-dot" id="formationDot" style="display:none;"></span></button>
-      <button class="tab-btn" data-tab="aide">Aide</button>
     </div>
 
     <div class="tab-panel active" id="tab-suivi">
@@ -2858,6 +2860,13 @@
       if (btn.dataset.tab === 'formation') markFormationSeen();
       if (btn.dataset.tab === 'stock') loadStock();
     });
+  });
+
+  document.getElementById('aideTopLink').addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-aide').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   // ---- Notifications visuelles sur les onglets (Produits / Formation) ----
