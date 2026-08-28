@@ -1092,7 +1092,11 @@
   body.hide-textesFormation .sensitive-textesFormation,
   body.hide-stockPhotos .sensitive-stockPhotos,
   body.hide-stockTitres .sensitive-stockTitres,
-  body.hide-stockPrix .sensitive-stockPrix {
+  body.hide-stockPrix .sensitive-stockPrix,
+  body.hide-eurSuivi .sensitive-eurSuivi,
+  body.hide-eurStock .sensitive-eurStock,
+  body.hide-eurProduits .sensitive-eurProduits,
+  body.hide-eurAffiliations .sensitive-eurAffiliations {
     filter: blur(7px);
     user-select: none;
     transition: filter 0.2s ease;
@@ -1628,6 +1632,10 @@
             <input type="checkbox" data-privacy="chart" checked>
             <span>Graphique</span>
           </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="eurSuivi">
+            <span>Symbole €</span>
+          </label>
         </div>
       </div>
 
@@ -1774,6 +1782,10 @@
             <input type="checkbox" data-privacy="stockPrix" checked>
             <span>Prix d'achat</span>
           </label>
+          <label class="privacy-menu-item">
+            <input type="checkbox" data-privacy="eurStock">
+            <span>Symbole €</span>
+          </label>
         </div>
       </div>
 
@@ -1858,6 +1870,10 @@
               <input type="checkbox" data-privacy="prixProduits" checked>
               <span>Prix</span>
             </label>
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="eurProduits">
+              <span>Symbole €</span>
+            </label>
           </div>
         </div>
         <p class="products-count" id="productsCount"></p>
@@ -1924,6 +1940,10 @@
             <label class="privacy-menu-item">
               <input type="checkbox" data-privacy="nomFilleul" checked>
               <span>Nom du filleul</span>
+            </label>
+            <label class="privacy-menu-item">
+              <input type="checkbox" data-privacy="eurAffiliations">
+              <span>Symbole €</span>
             </label>
           </div>
         </div>
@@ -2503,17 +2523,17 @@
       return `<tr>
         <td>${dateStr}</td>
         <td class="sensitive-nomFilleul">${c.filleul}</td>
-        <td class="amount sensitive-montantAffiliation">+${c.amount}€</td>
+        <td class="amount sensitive-montantAffiliation">+${c.amount}<span class="sensitive-eurAffiliations">€</span></td>
       </tr>`;
     }).join('');
 
     const total = data.reduce((s, c) => s + Number(c.amount), 0);
-    totalEl.textContent = 'Total : ' + total + '€';
+    totalEl.innerHTML = 'Total : ' + total + '<span class="sensitive-eurAffiliations">€</span>';
 
     motivationEl.style.display = 'block';
     const count = data.length;
     motivationEl.innerHTML = `
-      <div class="am-amount">🎉 +${total}€ générés</div>
+      <div class="am-amount">🎉 +${total}<span class="sensitive-eurAffiliations">€</span> générés</div>
       <div class="am-sub">grâce à ${count} parrainage${count > 1 ? 's' : ''} déjà validé${count > 1 ? 's' : ''} — continue comme ça !</div>
     `;
   }
@@ -2611,8 +2631,8 @@
           <div class="pc-title sensitive-titres">${p.title}</div>
           <div class="pc-date">Ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
           <div class="pc-prices sensitive-prixProduits">
-            <span class="pc-buy">Achat: ${p.buy_price}€</span> →
-            <span class="pc-sell">Revente: ${p.sell_price}€</span>
+            <span class="pc-buy">Achat: ${p.buy_price}<span class="sensitive-eurProduits">€</span></span> →
+            <span class="pc-sell">Revente: ${p.sell_price}<span class="sensitive-eurProduits">€</span></span>
           </div>
           ${safeLink ? `<a class="pc-link" href="${safeLink}" target="_blank">Voir l'article</a>` : ''}
           ${isAdmin ? `
@@ -2993,6 +3013,10 @@
     document.body.classList.toggle('hide-stockPhotos', !!prefs.stockPhotos);
     document.body.classList.toggle('hide-stockTitres', !!prefs.stockTitres);
     document.body.classList.toggle('hide-stockPrix', !!prefs.stockPrix);
+    document.body.classList.toggle('hide-eurSuivi', !!prefs.eurSuivi);
+    document.body.classList.toggle('hide-eurStock', !!prefs.eurStock);
+    document.body.classList.toggle('hide-eurProduits', !!prefs.eurProduits);
+    document.body.classList.toggle('hide-eurAffiliations', !!prefs.eurAffiliations);
   }
 
   document.querySelectorAll('.privacy-menu-dropdown input[type=checkbox]').forEach(cb => {
@@ -3011,6 +3035,8 @@
       document.querySelectorAll(`.privacy-menu-dropdown input[data-privacy="${key}"]`).forEach(other => {
         other.checked = cb.checked;
       });
+      // Le graphique (canvas) doit être redessiné pour appliquer/retirer le symbole €.
+      if (key === 'eurSuivi') render();
     });
   });
 
@@ -3195,7 +3221,7 @@
           <div class="pc-title sensitive-stockTitres">${escapeHtml(s.title)}</div>
           <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
           <div class="pc-prices sensitive-stockPrix">
-            <span class="pc-buy">Achat : ${fmt(Number(s.buy_price))}</span>
+            <span class="pc-buy">Achat : ${fmtHtml(Number(s.buy_price), 'Stock')}</span>
           </div>
           <div style="display:flex; gap:6px; margin-top:8px;">
             <button class="stock-sell-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem;">✓ Marquer vendu</button>
@@ -3361,6 +3387,11 @@
     const sign = n < 0 ? '-' : '';
     return sign + Math.abs(n).toFixed(2).replace(/\.00$/, '') + '€';
   }
+  // Comme fmt(), mais enveloppe le symbole € dans un span qui peut être masqué
+  // indépendamment des chiffres, via le menu "Symbole €" de l'onglet concerné.
+  function fmtHtml(n, cat) {
+    return fmt(n).replace('€', `<span class="sensitive-eur${cat}">€</span>`);
+  }
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str ?? '';
@@ -3490,12 +3521,12 @@
           <div class="item">
             <div class="info">
               <div class="name sensitive-names">${escapeHtml(item.sellName || item.buyName)}</div>
-              <div class="prices sensitive-montant">Achat: ${fmt(item.buyPrice)}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmt(item.sellPrice)}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
+              <div class="prices sensitive-montant">Achat: ${fmtHtml(item.buyPrice, 'Suivi')}${item.buyDate ? ' (' + fmtDate(item.buyDate) + ')' : ''} → Revente: ${fmtHtml(item.sellPrice, 'Suivi')}${item.sellDate ? ' (' + fmtDate(item.sellDate) + ')' : ''}</div>
               <span class="item-categorie-tag">${escapeHtml(item.categorie || 'Autre')}</span>
               ${isLowMargin ? '<span class="item-low-margin-tag">⚠️ Marge < x2</span>' : ''}
             </div>
             <div class="right">
-              <div class="margin ${cls} sensitive-benefice">${margin >= 0 ? '+' : ''}${fmt(margin)}</div>
+              <div class="margin ${cls} sensitive-benefice">${margin >= 0 ? '+' : ''}${fmtHtml(margin, 'Suivi')}</div>
               <div class="item-actions">
                 <button class="edit-item" data-id="${item.id}">✎</button>
                 <button class="del" data-id="${item.id}">✕</button>
@@ -3577,7 +3608,7 @@
       return;
     }
     el.style.display = 'block';
-    el.innerHTML = `🏆 Ton record : <strong>+${fmt(best.margin)}</strong> sur ${escapeHtml(best.name)}`;
+    el.innerHTML = `🏆 Ton record : <strong>+${fmtHtml(best.margin, 'Suivi')}</strong> sur ${escapeHtml(best.name)}`;
   }
 
   // ---- Objectif mensuel (stocké sur l'appareil) ----
@@ -3599,7 +3630,7 @@
     if (!goal || goal <= 0) {
       fillEl.style.width = '0%';
       fillEl.className = 'goal-fill';
-      labelEl.textContent = 'Aucun objectif défini — clique sur "Modifier" pour en fixer un.';
+      labelEl.innerHTML = 'Aucun objectif défini — clique sur "Modifier" pour en fixer un.';
       return;
     }
     const now = new Date();
@@ -3613,7 +3644,7 @@
     const pct = Math.max(0, Math.min(100, Math.round((monthProfit / goal) * 100)));
     fillEl.style.width = pct + '%';
     fillEl.className = 'goal-fill' + (pct >= 100 ? ' good' : pct >= 50 ? ' mid' : '');
-    labelEl.textContent = `${fmt(monthProfit)} / ${fmt(goal)} ce mois-ci (${pct}%)`;
+    labelEl.innerHTML = `${fmtHtml(monthProfit, 'Suivi')} / ${fmtHtml(goal, 'Suivi')} ce mois-ci (${pct}%)`;
   }
 
   document.getElementById('goalEditLink').addEventListener('click', async () => {
@@ -3671,19 +3702,19 @@
       </div>
       <div class="yearly-stat-row">
         <span class="yearly-stat-label">Total investi (achats)</span>
-        <span class="yearly-stat-value">${fmt(totalBuy)}</span>
+        <span class="yearly-stat-value">${fmtHtml(totalBuy, 'Suivi')}</span>
       </div>
       <div class="yearly-stat-row">
         <span class="yearly-stat-label">Total encaissé (reventes)</span>
-        <span class="yearly-stat-value">${fmt(totalSell)}</span>
+        <span class="yearly-stat-value">${fmtHtml(totalSell, 'Suivi')}</span>
       </div>
       <div class="yearly-stat-row">
         <span class="yearly-stat-label">Bénéfice total</span>
-        <span class="yearly-stat-value ${profitCls}">${totalProfit >= 0 ? '+' : ''}${fmt(totalProfit)}</span>
+        <span class="yearly-stat-value ${profitCls}">${totalProfit >= 0 ? '+' : ''}${fmtHtml(totalProfit, 'Suivi')}</span>
       </div>
       <div class="yearly-stat-row">
         <span class="yearly-stat-label">Meilleur mois</span>
-        <span class="yearly-stat-value ${bestMonthCls}">${bestMonth !== null ? MONTH_NAMES_FULL[bestMonth] + ' (' + (bestMonthProfit >= 0 ? '+' : '') + fmt(bestMonthProfit) + ')' : '—'}</span>
+        <span class="yearly-stat-value ${bestMonthCls}">${bestMonth !== null ? MONTH_NAMES_FULL[bestMonth] + ' (' + (bestMonthProfit >= 0 ? '+' : '') + fmtHtml(bestMonthProfit, 'Suivi') + ')' : '—'}</span>
       </div>
     `;
   }
@@ -3715,7 +3746,7 @@
     });
     const weekProfit = weekItems.reduce((s, i) => s + (i.sellPrice - i.buyPrice), 0);
     const sign = weekProfit >= 0 ? '+' : '';
-    el.innerHTML = `Cette semaine : <strong>${sign}${fmt(weekProfit)}</strong> · ${weekItems.length} article${weekItems.length > 1 ? 's' : ''} vendu${weekItems.length > 1 ? 's' : ''}`;
+    el.innerHTML = `Cette semaine : <strong>${sign}${fmtHtml(weekProfit, 'Suivi')}</strong> · ${weekItems.length} article${weekItems.length > 1 ? 's' : ''} vendu${weekItems.length > 1 ? 's' : ''}`;
   }
 
   function renderCategorieSummary(items) {
@@ -3729,7 +3760,7 @@
     el.innerHTML = Object.keys(byCat).map(cat => {
       const margin = byCat[cat];
       const cls = margin >= 0 ? 'pos' : 'neg';
-      return `<span class="categorie-badge"><strong>${escapeHtml(cat)}</strong> : <span class="cb-margin ${cls}">${margin >= 0 ? '+' : ''}${fmt(margin)}</span></span>`;
+      return `<span class="categorie-badge"><strong>${escapeHtml(cat)}</strong> : <span class="cb-margin ${cls}">${margin >= 0 ? '+' : ''}${fmtHtml(margin, 'Suivi')}</span></span>`;
     }).join('');
   }
 
@@ -3795,7 +3826,7 @@
 
     const heroProfitEl = document.getElementById('heroProfit');
     const showSign = metric === 'profit';
-    heroProfitEl.textContent = (showSign && currentTotal >= 0 ? '+' : '') + fmt(currentTotal);
+    heroProfitEl.innerHTML = (showSign && currentTotal >= 0 ? '+' : '') + fmtHtml(currentTotal, 'Suivi');
 
     const arrowEl = document.getElementById('heroArrow');
     const arrowPath = arrowEl.querySelector('path');
@@ -3862,7 +3893,8 @@
       ctx.lineTo(w - padRight, y);
       ctx.stroke();
       ctx.fillStyle = '#A79BB0';
-      ctx.fillText(fmt(v), 4, y + 3);
+      const hideEuroSuivi = document.body.classList.contains('hide-eurSuivi');
+      ctx.fillText(hideEuroSuivi ? fmt(v).replace('€', '') : fmt(v), 4, y + 3);
     }
 
     const stepX = values.length > 1 ? chartW / (values.length - 1) : 0;
