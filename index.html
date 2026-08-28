@@ -1892,18 +1892,12 @@
 
       <div class="card">
         <h2>Mon stock</h2>
-        <div class="row-2" style="margin-bottom:12px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>Affichage</label>
-            <select id="stockViewMode">
-              <option value="actif">Stock actif</option>
-              <option value="vendu">Stock vendu</option>
-            </select>
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>&nbsp;</label>
-            <div class="stock-sold-counter" id="stockSoldCounter">0 article vendu depuis le stock</div>
-          </div>
+        <div class="field">
+          <label>Affichage</label>
+          <select id="stockViewMode">
+            <option value="actif">Stock actif</option>
+            <option value="vendu">Stock vendu</option>
+          </select>
         </div>
         <div class="row-2" id="stockVariantFilters" style="margin-bottom:12px;">
           <div class="field" style="margin-bottom:0;">
@@ -3387,12 +3381,7 @@
   function renderStockGrid() {
     const gridEl = document.getElementById('stockGrid');
     const countEl = document.getElementById('stockTotalCounter');
-    const soldCountEl = document.getElementById('stockSoldCounter');
     const viewMode = document.getElementById('stockViewMode').value;
-
-    // Le compteur de ventes est toujours visible, quel que soit le mode affiché.
-    const totalSold = allStockCache.reduce((s, it) => s + (it.sold_quantity || 0), 0);
-    soldCountEl.textContent = totalSold + ' article' + (totalSold > 1 ? 's' : '') + ' vendu' + (totalSold > 1 ? 's' : '') + ' depuis le stock';
 
     // Filtres couleur/taille : uniquement pertinents en mode "actif"
     const filtersWrap = document.getElementById('stockVariantFilters');
@@ -3463,13 +3452,14 @@
         if (s.color) variantParts.push(escapeHtml(s.color));
         if (s.size) variantParts.push(escapeHtml(s.size));
         const variantLabel = variantParts.length > 0 ? variantParts.join(' · ') : 'Sans détail';
-        const actionsHtml = viewMode === 'actif' ? `
+        const sellBtnHtml = viewMode === 'actif' ? `<button class="stock-sell-btn" data-id="${s.id}" title="Marquer vendu">✓</button>` : '';
+        const actionsHtml = `
             <div class="stock-variant-actions">
-              <button class="stock-sell-btn" data-id="${s.id}" title="Marquer vendu">✓</button>
+              ${sellBtnHtml}
               <button class="stock-edit-btn" data-id="${s.id}" title="Modifier">✎</button>
               <button class="stock-delete-btn" data-id="${s.id}" title="Supprimer">🗑</button>
             </div>
-        ` : '';
+        `;
         return `
           <div class="stock-variant-row">
             <div class="stock-variant-info">
@@ -3497,8 +3487,6 @@
       </div>
     `;
     }).join('');
-
-    if (viewMode !== 'actif') return;
 
     document.querySelectorAll('.stock-sell-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3541,7 +3529,10 @@
 
     document.querySelectorAll('.stock-delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Supprimer cet article du stock ?')) return;
+        const confirmMsg = viewMode === 'actif'
+          ? 'Supprimer cet article du stock ?'
+          : 'Supprimer cette ligne ? Son historique de vente sera aussi effacé.';
+        if (!confirm(confirmMsg)) return;
         await deleteStockItem(btn.dataset.id);
         loadStock();
       });
