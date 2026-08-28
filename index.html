@@ -1472,10 +1472,6 @@
       <button class="auth-tab-btn active" id="tabLoginBtn">Connexion</button>
       <button class="auth-tab-btn" id="tabSignupBtn">Inscription</button>
     </div>
-    <input type="text" id="authFirstName" placeholder="Prénom" autocomplete="given-name" style="display:none;">
-    <div style="height:10px; display:none;" id="authFirstNameSpacer"></div>
-    <input type="text" id="authLastName" placeholder="Nom" autocomplete="family-name" style="display:none;">
-    <div style="height:10px; display:none;" id="authLastNameSpacer"></div>
     <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
     <div style="height:10px;"></div>
     <div class="password-field-wrap">
@@ -1713,29 +1709,6 @@
 
     <div class="tab-panel" id="tab-affiliations">
       <div class="affiliate-motivation" id="affiliateMotivation" style="display:none;"></div>
-
-      <div class="card">
-        <h2>Mon lien de parrainage</h2>
-        <p style="color:var(--muted); font-size:0.88rem; line-height:1.55; margin-bottom:14px;">
-          Partage ce lien : dès que quelqu'un s'inscrit via ce lien, tu es enregistré·e automatiquement comme son parrain ci-dessous.
-        </p>
-        <div class="password-field-wrap" style="margin-bottom:14px;">
-          <input type="text" id="myReferralLink" readonly value="Chargement...">
-          <button type="button" class="password-toggle-btn" id="copyReferralLinkBtn">📋</button>
-        </div>
-        <h2>Personnes parrainées</h2>
-        <table class="comm-table">
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Inscrit·e le</th>
-            </tr>
-          </thead>
-          <tbody id="referredList">
-            <tr><td colspan="2" style="text-align:center; color:var(--muted); padding:20px 8px;">Chargement...</td></tr>
-          </tbody>
-        </table>
-      </div>
 
       <div class="card" id="adminCommissionCard" style="display:none;">
         <h2>Ajouter une commission</h2>
@@ -2048,23 +2021,6 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveW10enJ4eWJqZHB5ZXV4YWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTUyNzMsImV4cCI6MjEwMjc5MTI3M30.fwSuQ0IivdFP88fQktqSDY-VbZQ-SqyQ2yT7CdPk0lQ";
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ---- Capture du code de parrainage présent dans l'URL (?ref=xxxx) ----
-  (function captureReferralCode() {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
-    if (ref) sessionStorage.setItem('bp_ref_code', ref);
-  })();
-
-  function slugifyName(str) {
-    return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase().trim().replace(/[^a-z0-9]+/g, '');
-  }
-  function generateReferralCode(firstName, lastName) {
-    const base = slugifyName(firstName) + '-' + slugifyName(lastName);
-    const suffix = Math.random().toString(36).slice(2, 6);
-    return `${base}-${suffix}`;
-  }
-
   const landingBlock = document.getElementById('landingBlock');
   const authCard = document.getElementById('authCard');
   const mainAppContent = document.getElementById('mainAppContent');
@@ -2097,10 +2053,6 @@
     tabSignupBtn.classList.toggle('active', mode === 'signup');
     authSubmitBtn.textContent = mode === 'login' ? 'Se connecter' : 'Créer mon compte';
     document.getElementById('authInviteCode').style.display = mode === 'signup' ? 'block' : 'none';
-    document.getElementById('authFirstName').style.display = mode === 'signup' ? 'block' : 'none';
-    document.getElementById('authFirstNameSpacer').style.display = mode === 'signup' ? 'block' : 'none';
-    document.getElementById('authLastName').style.display = mode === 'signup' ? 'block' : 'none';
-    document.getElementById('authLastNameSpacer').style.display = mode === 'signup' ? 'block' : 'none';
     document.getElementById('authPasswordConfirmWrap').style.display = mode === 'signup' ? 'flex' : 'none';
     document.getElementById('authForgotWrap').style.display = mode === 'login' ? 'block' : 'none';
     authError.textContent = '';
@@ -2167,12 +2119,6 @@
         authError.textContent = 'Code d\'invitation incorrect.';
         return;
       }
-      const firstName = document.getElementById('authFirstName').value.trim();
-      const lastName = document.getElementById('authLastName').value.trim();
-      if (!firstName || !lastName) {
-        authError.textContent = 'Renseigne ton prénom et ton nom.';
-        return;
-      }
     }
     authSubmitBtn.disabled = true;
     try {
@@ -2180,21 +2126,7 @@
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const firstName = document.getElementById('authFirstName').value.trim();
-        const lastName = document.getElementById('authLastName').value.trim();
-        const referralCode = generateReferralCode(firstName, lastName);
-        const referredByCode = sessionStorage.getItem('bp_ref_code') || null;
-        const { error } = await supabaseClient.auth.signUp({
-          email, password,
-          options: {
-            data: {
-              first_name: firstName,
-              last_name: lastName,
-              referral_code: referralCode,
-              referred_by_code: referredByCode
-            }
-          }
-        });
+        const { error } = await supabaseClient.auth.signUp({ email, password });
         if (error) throw error;
         authInfo.textContent = 'Compte créé ! Vérifie ta boîte mail si une confirmation est requise, sinon tu es déjà connecté.';
       }
@@ -2339,54 +2271,6 @@
   }
 
   const ADMIN_EMAIL = "orlanegeoffroy6@gmail.com";
-
-  async function loadReferralInfo() {
-    const linkInput = document.getElementById('myReferralLink');
-    const listEl = document.getElementById('referredList');
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return;
-
-    const { data: myProfile, error: myErr } = await supabaseClient
-      .from('profiles')
-      .select('referral_code')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (myErr || !myProfile || !myProfile.referral_code) {
-      linkInput.value = 'Lien indisponible';
-    } else {
-      const baseUrl = window.location.origin + window.location.pathname;
-      linkInput.value = `${baseUrl}?ref=${myProfile.referral_code}`;
-    }
-
-    const { data: referred, error: refErr } = await supabaseClient
-      .from('profiles')
-      .select('first_name, last_name, created_at')
-      .eq('referred_by', session.user.id)
-      .order('created_at', { ascending: false });
-
-    if (refErr || !referred || referred.length === 0) {
-      listEl.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--muted); padding:20px 8px;">Personne pour le moment</td></tr>';
-      return;
-    }
-
-    listEl.innerHTML = referred.map(p => `
-      <tr>
-        <td>${escapeHtml((p.first_name || '') + ' ' + (p.last_name || ''))}</td>
-        <td>${p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '—'}</td>
-      </tr>
-    `).join('');
-  }
-
-  document.getElementById('copyReferralLinkBtn').addEventListener('click', () => {
-    const linkInput = document.getElementById('myReferralLink');
-    linkInput.select();
-    navigator.clipboard.writeText(linkInput.value);
-    const btn = document.getElementById('copyReferralLinkBtn');
-    const original = btn.textContent;
-    btn.textContent = '✓';
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  });
 
   async function loadCommissions() {
     const listEl = document.getElementById('commissionsList');
@@ -2737,7 +2621,7 @@
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'affiliations') { loadCommissions(); loadReferralInfo(); }
+      if (btn.dataset.tab === 'affiliations') loadCommissions();
       if (btn.dataset.tab === 'produits') { loadProducts(); markProduitsSeen(); }
       if (btn.dataset.tab === 'suivi') render();
       if (btn.dataset.tab === 'formation') markFormationSeen();
