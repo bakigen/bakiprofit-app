@@ -1022,15 +1022,6 @@
     border-radius: 20px;
     vertical-align: middle;
   }
-  .stock-color-badge {
-    display: inline-block;
-    font-size: 0.68rem;
-    color: var(--muted);
-    border: 1px solid #3A2438;
-    border-radius: 10px;
-    padding: 1px 7px;
-    margin: 4px 0;
-  }
   .stock-sleeping-badge {
     display: inline-block;
     background: rgba(248, 113, 113, 0.12);
@@ -1041,6 +1032,36 @@
     padding: 3px 8px;
     margin-bottom: 6px;
   }
+  .stock-variant-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .stock-variant-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+  .stock-variant-info { flex: 1; min-width: 0; }
+  .stock-variant-label { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+  .stock-variant-row .stock-sleeping-badge { margin-left: 6px; margin-bottom: 0; }
+  .stock-variant-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .stock-variant-actions button {
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+  .stock-variant-actions .stock-edit-btn { background: #3A2438; }
+  .stock-variant-actions .stock-delete-btn { background: #3A1F2E; color: #F87171; }
   .product-card img {
     width: 100%;
     height: 120px;
@@ -1835,9 +1856,15 @@
           <label>Titre de l'article</label>
           <input type="text" id="stockTitle" placeholder="ex: Robe Zara fleurie">
         </div>
-        <div class="field">
-          <label>Couleur (optionnel)</label>
-          <input type="text" id="stockColor" placeholder="ex: Rouge, Bleu marine...">
+        <div class="row-2">
+          <div class="field">
+            <label>Couleur (optionnel)</label>
+            <input type="text" id="stockColor" placeholder="ex: Rouge, Bleu marine...">
+          </div>
+          <div class="field">
+            <label>Taille (optionnel)</label>
+            <input type="text" id="stockSize" placeholder="ex: M, 38, 42...">
+          </div>
         </div>
         <div class="row-2">
           <div class="field">
@@ -3242,16 +3269,19 @@
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) return;
 
-    // Si un article du même titre ET de la même couleur existe déjà en stock,
-    // on augmente sa quantité au lieu de créer une nouvelle ligne en double.
-    // Une couleur différente reste une fiche à part, pour ne pas mélanger les articles.
+    // Un article ne fusionne (quantité +1) que si le titre, la couleur, la taille
+    // ET le prix d'achat correspondent exactement. Un prix différent (même titre)
+    // crée toujours une fiche à part.
     const colorNormalized = (entry.color || '').trim();
+    const sizeNormalized = (entry.size || '').trim();
     let query = supabaseClient
       .from('stock')
       .select('id, quantity')
       .eq('user_id', session.user.id)
-      .ilike('title', entry.title.trim());
+      .ilike('title', entry.title.trim())
+      .eq('buy_price', entry.buyPrice);
     query = colorNormalized ? query.ilike('color', colorNormalized) : query.is('color', null);
+    query = sizeNormalized ? query.ilike('size', sizeNormalized) : query.is('size', null);
     const { data: existing, error: findError } = await query;
 
     if (!findError && existing && existing.length > 0) {
@@ -3266,6 +3296,7 @@
       user_id: session.user.id,
       title: entry.title,
       color: colorNormalized || null,
+      size: sizeNormalized || null,
       buy_price: entry.buyPrice,
       buy_date: entry.buyDate,
       photo_url: entry.photoUrl,
@@ -3276,7 +3307,13 @@
   }
 
   async function updateStockItem(id, entry) {
-    const payload = { title: entry.title, color: (entry.color || '').trim() || null, buy_price: entry.buyPrice, buy_date: entry.buyDate };
+    const payload = {
+      title: entry.title,
+      color: (entry.color || '').trim() || null,
+      size: (entry.size || '').trim() || null,
+      buy_price: entry.buyPrice,
+      buy_date: entry.buyDate
+    };
     if (entry.photoUrl !== undefined) payload.photo_url = entry.photoUrl;
     const { error } = await supabaseClient.from('stock').update(payload).eq('id', id);
     if (error) console.error(error);
@@ -3323,25 +3360,56 @@
       return;
     }
 
-    gridEl.innerHTML = allStockCache.map(s => {
-      const dateRef = s.buy_date || s.created_at;
-      const daysInStock = Math.floor((Date.now() - new Date(dateRef).getTime()) / (24 * 60 * 60 * 1000));
-      const isSleeping = daysInStock >= 3;
+    // Regroupe les fiches par titre + prix d'achat : un prix différent reste une fiche à part,
+    // même pour un titre identique. À l'intérieur d'un groupe, chaque couleur/taille est une ligne distincte.
+    const groups = [];
+    allStockCache.forEach(s => {
+      const key = s.title.trim().toLowerCase() + '||' + Number(s.buy_price).toFixed(2);
+      let group = groups.find(g => g.key === key);
+      if (!group) {
+        group = { key, title: s.title, buyPrice: Number(s.buy_price), photoUrl: s.photo_url, rows: [] };
+        groups.push(group);
+      }
+      if (!group.photoUrl && s.photo_url) group.photoUrl = s.photo_url;
+      group.rows.push(s);
+    });
+
+    gridEl.innerHTML = groups.map(g => {
+      const groupQty = g.rows.reduce((s, r) => s + (r.quantity || 1), 0);
+      const rowsHtml = g.rows.map(s => {
+        const dateRef = s.buy_date || s.created_at;
+        const daysInStock = Math.floor((Date.now() - new Date(dateRef).getTime()) / (24 * 60 * 60 * 1000));
+        const isSleeping = daysInStock >= 3;
+        const variantParts = [];
+        if (s.color) variantParts.push(escapeHtml(s.color));
+        if (s.size) variantParts.push(escapeHtml(s.size));
+        const variantLabel = variantParts.length > 0 ? variantParts.join(' · ') : 'Sans détail';
+        return `
+          <div class="stock-variant-row">
+            <div class="stock-variant-info">
+              <span class="stock-variant-label sensitive-stockTitres">${variantLabel} <span class="stock-qty-badge">x${s.quantity || 1}</span></span>
+              ${isSleeping ? `<span class="stock-sleeping-badge">⏰ ${daysInStock}j</span>` : ''}
+              <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
+            </div>
+            <div class="stock-variant-actions">
+              <button class="stock-sell-btn" data-id="${s.id}" title="Marquer vendu">✓</button>
+              <button class="stock-edit-btn" data-id="${s.id}" title="Modifier">✎</button>
+              <button class="stock-delete-btn" data-id="${s.id}" title="Supprimer">🗑</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
       return `
       <div class="product-card">
-        ${s.photo_url ? `<img class="sensitive-stockPhotos" src="${s.photo_url}" alt="${escapeHtml(s.title)}">` : ''}
+        ${g.photoUrl ? `<img class="sensitive-stockPhotos" src="${g.photoUrl}" alt="${escapeHtml(g.title)}">` : ''}
         <div class="pc-body">
-          ${isSleeping ? `<span class="stock-sleeping-badge">⏰ En stock depuis ${daysInStock}j</span>` : ''}
-          <div class="pc-title sensitive-stockTitres">${escapeHtml(s.title)}${(s.quantity || 1) > 1 ? ` <span class="stock-qty-badge">x${s.quantity}</span>` : ''}</div>
-          ${s.color ? `<span class="stock-color-badge">🎨 ${escapeHtml(s.color)}</span>` : ''}
-          <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
+          <div class="pc-title sensitive-stockTitres">${escapeHtml(g.title)} <span class="stock-qty-badge">x${groupQty}</span></div>
           <div class="pc-prices sensitive-stockPrix">
-            <span class="pc-buy">Achat : ${fmtHtml(Number(s.buy_price), 'Stock')}${(s.quantity || 1) > 1 ? ' / unité' : ''}</span>
+            <span class="pc-buy">Achat : ${fmtHtml(g.buyPrice, 'Stock')} / unité</span>
           </div>
-          <div style="display:flex; gap:6px; margin-top:8px;">
-            <button class="stock-sell-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem;">✓ Marquer vendu</button>
-            <button class="stock-edit-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A2438;">Modifier</button>
-            <button class="stock-delete-btn" data-id="${s.id}" style="flex:1; margin:0; padding:7px; font-size:0.72rem; background:#3A1F2E; color:#F87171;">Supprimer</button>
+          <div class="stock-variant-list">
+            ${rowsHtml}
           </div>
         </div>
       </div>
@@ -3373,6 +3441,7 @@
         editingStockId = stockItem.id;
         document.getElementById('stockTitle').value = stockItem.title;
         document.getElementById('stockColor').value = stockItem.color || '';
+        document.getElementById('stockSize').value = stockItem.size || '';
         document.getElementById('stockBuyPrice').value = stockItem.buy_price;
         document.getElementById('stockBuyDate').value = stockItem.buy_date || '';
         if (stockItem.photo_url) {
@@ -3399,6 +3468,7 @@
     editingStockId = null;
     document.getElementById('stockTitle').value = '';
     document.getElementById('stockColor').value = '';
+    document.getElementById('stockSize').value = '';
     document.getElementById('stockBuyPrice').value = '';
     document.getElementById('stockBuyDate').value = '';
     document.getElementById('stockPhoto').value = '';
@@ -3425,6 +3495,7 @@
     stockAddBtn.addEventListener('click', async () => {
       const title = document.getElementById('stockTitle').value.trim();
       const color = document.getElementById('stockColor').value.trim();
+      const size = document.getElementById('stockSize').value.trim();
       const buyPrice = parseFloat(document.getElementById('stockBuyPrice').value);
       const buyDate = document.getElementById('stockBuyDate').value || null;
       const file = stockPhotoInput.files[0];
@@ -3453,9 +3524,9 @@
 
       let error;
       if (editingStockId) {
-        error = await updateStockItem(editingStockId, { title, color, buyPrice, buyDate, photoUrl });
+        error = await updateStockItem(editingStockId, { title, color, size, buyPrice, buyDate, photoUrl });
       } else {
-        error = await addStockItem({ title, color, buyPrice, buyDate, photoUrl });
+        error = await addStockItem({ title, color, size, buyPrice, buyDate, photoUrl });
       }
 
       stockAddBtn.disabled = false;
