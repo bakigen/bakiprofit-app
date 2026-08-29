@@ -1042,6 +1042,30 @@
     padding: 3px 8px;
     margin-bottom: 6px;
   }
+  .top-selling-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1F1219;
+    border: 1px solid #3A2438;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .top-selling-rank {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--green));
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .top-selling-info { flex: 1; min-width: 0; }
+  .top-selling-name { font-weight: 700; font-size: 0.85rem; color: var(--text); }
+  .top-selling-count { font-size: 0.7rem; color: var(--green); font-weight: 700; }
+  .top-selling-variant { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
   .stock-variant-list {
     margin-top: 10px;
     display: flex;
@@ -1489,6 +1513,19 @@
           <li><span class="dot">✓</span> Bilan annuel complet (total investi, encaissé, meilleur mois)</li>
           <li><span class="dot">✓</span> Ton record personnel mis en avant, pour te donner un objectif à battre</li>
           <li><span class="dot">✓</span> Alerte visuelle si la marge d'un article est trop faible</li>
+          <li><span class="dot">✓</span> Top 10 automatique de tes articles les plus vendus, avec la couleur et la taille qui se vendent le mieux</li>
+        </ul>
+      </div>
+
+      <div class="landing-section">
+        <h3>📦 Gestion de ton stock</h3>
+        <p>Un onglet Stock dédié pour suivre tes articles achetés avant même leur revente :</p>
+        <ul class="landing-points" style="margin-top:0;">
+          <li><span class="dot">✓</span> Photo, couleur et taille pour ne jamais mélanger tes articles</li>
+          <li><span class="dot">✓</span> Quantités calculées automatiquement (plus besoin de créer une fiche par doublon)</li>
+          <li><span class="dot">✓</span> Valeur totale de ton stock affichée en temps réel</li>
+          <li><span class="dot">✓</span> Alerte "stock qui dort" après 3 jours sans vente</li>
+          <li><span class="dot">✓</span> Bascule vers le Suivi en un clic dès qu'un article est vendu, avec historique conservé dans "Stock vendu"</li>
         </ul>
       </div>
 
@@ -1762,6 +1799,12 @@
         </div>
       </div>
 
+      <div class="card" id="topSellingCard" style="display:none;">
+        <h2>🏆 Top ventes</h2>
+        <p style="color:var(--muted); font-size:0.82rem; margin-bottom:14px;">Tes articles les plus vendus, mis à jour automatiquement.</p>
+        <div id="topSellingList"></div>
+      </div>
+
       <div class="card">
         <h2>Enregistrer un article</h2>
         <div class="field" id="itemPhotoFromStockWrap" style="display:none;">
@@ -1794,6 +1837,16 @@
             <option value="Accessoires">Accessoires</option>
             <option value="Autre">Autre</option>
           </select>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Couleur (optionnel)</label>
+            <input type="text" id="itemColor" placeholder="ex: Rouge, Bleu marine...">
+          </div>
+          <div class="field">
+            <label>Taille (optionnel)</label>
+            <input type="text" id="itemSize" placeholder="ex: M, 38, 42...">
+          </div>
         </div>
         <div class="row-2">
           <div class="field">
@@ -3240,6 +3293,8 @@
       sellDate: row.sell_date,
       categorie: row.categorie || 'Autre',
       photoUrl: row.photo_url,
+      color: row.color,
+      size: row.size,
       date: row.sell_date || row.buy_date || row.created_at
     }));
   }
@@ -3255,7 +3310,9 @@
       buy_date: item.buyDate,
       sell_date: item.sellDate,
       categorie: item.categorie,
-      photo_url: item.photoUrl
+      photo_url: item.photoUrl,
+      color: item.color || null,
+      size: item.size || null
     });
     if (error) console.error(error);
   }
@@ -3267,7 +3324,9 @@
       sell_price: item.sellPrice,
       buy_date: item.buyDate,
       sell_date: item.sellDate,
-      categorie: item.categorie
+      categorie: item.categorie,
+      color: item.color || null,
+      size: item.size || null
     };
     if (item.photoUrl !== undefined) payload.photo_url = item.photoUrl;
     const { error } = await supabaseClient.from('items').update(payload).eq('id', id);
@@ -3495,6 +3554,8 @@
         document.getElementById('buyName').value = stockItem.title;
         document.getElementById('buyPrice').value = stockItem.buy_price;
         document.getElementById('buyDate').value = stockItem.buy_date || '';
+        document.getElementById('itemColor').value = stockItem.color || '';
+        document.getElementById('itemSize').value = stockItem.size || '';
         carriedStockPhotoUrl = stockItem.photo_url || null;
         carriedFromStockId = stockItem.id;
         if (carriedStockPhotoUrl) {
@@ -3774,6 +3835,7 @@
     renderRecord(items);
     renderGoal(items);
     renderCategorieSummary(items);
+    renderTopSelling(items);
 
     const catFilter = document.getElementById('itemCategorieFilter').value;
     const filteredItems = catFilter === 'all' ? items : items.filter(i => (i.categorie || 'Autre') === catFilter);
@@ -3815,6 +3877,8 @@
           document.getElementById('buyDate').value = item.buyDate || '';
           document.getElementById('sellDate').value = item.sellDate || '';
           document.getElementById('itemCategorie').value = item.categorie || 'Autre';
+          document.getElementById('itemColor').value = item.color || '';
+          document.getElementById('itemSize').value = item.size || '';
           document.getElementById('addBtn').textContent = 'Enregistrer les modifications';
           document.getElementById('cancelEditItemBtn').style.display = 'block';
           document.querySelector('#tab-suivi .card:nth-of-type(1)').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3829,7 +3893,9 @@
             title: item.sellName || item.buyName,
             buyPrice: item.buyPrice,
             buyDate: item.buyDate || null,
-            photoUrl: item.photoUrl
+            photoUrl: item.photoUrl,
+            color: item.color,
+            size: item.size
           });
           await deleteItem(item.id);
           render();
@@ -4038,6 +4104,63 @@
       const margin = byCat[cat];
       const cls = margin >= 0 ? 'pos' : 'neg';
       return `<span class="categorie-badge"><strong>${escapeHtml(cat)}</strong> : <span class="cb-margin ${cls}">${margin >= 0 ? '+' : ''}${fmtHtml(margin, 'Suivi')}</span></span>`;
+    }).join('');
+  }
+
+  // ---- Top 10 des articles les plus vendus, avec la variante (couleur/taille) qui se vend le mieux ----
+  function renderTopSelling(items) {
+    const card = document.getElementById('topSellingCard');
+    const listEl = document.getElementById('topSellingList');
+    if (!card || !listEl) return;
+
+    if (items.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    // Regroupe les ventes par nom d'article (insensible à la casse)
+    const groups = {};
+    items.forEach(i => {
+      const name = (i.sellName || i.buyName || '').trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      if (!groups[key]) groups[key] = { name, count: 0, colors: {}, sizes: {} };
+      groups[key].count++;
+      if (i.color) groups[key].colors[i.color] = (groups[key].colors[i.color] || 0) + 1;
+      if (i.size) groups[key].sizes[i.size] = (groups[key].sizes[i.size] || 0) + 1;
+    });
+
+    const top10 = Object.values(groups).sort((a, b) => b.count - a.count).slice(0, 10);
+
+    if (top10.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'block';
+
+    function topEntry(obj) {
+      const entries = Object.entries(obj);
+      if (entries.length === 0) return null;
+      entries.sort((a, b) => b[1] - a[1]);
+      return entries[0];
+    }
+
+    listEl.innerHTML = top10.map((g, idx) => {
+      const topColor = topEntry(g.colors);
+      const topSize = topEntry(g.sizes);
+      const variantParts = [];
+      if (topColor) variantParts.push(`Couleur qui se vend le mieux : <strong>${escapeHtml(topColor[0])}</strong> (${topColor[1]} vente${topColor[1] > 1 ? 's' : ''})`);
+      if (topSize) variantParts.push(`Taille qui se vend le mieux : <strong>${escapeHtml(topSize[0])}</strong> (${topSize[1]} vente${topSize[1] > 1 ? 's' : ''})`);
+      return `
+        <div class="top-selling-row">
+          <div class="top-selling-rank">${idx + 1}</div>
+          <div class="top-selling-info">
+            <div class="top-selling-name sensitive-names">${escapeHtml(g.name)} <span class="top-selling-count">${g.count} vente${g.count > 1 ? 's' : ''}</span></div>
+            ${variantParts.length > 0 ? `<div class="top-selling-variant sensitive-names">${variantParts.join(' · ')}</div>` : ''}
+          </div>
+        </div>
+      `;
     }).join('');
   }
 
@@ -4290,6 +4413,8 @@
     document.getElementById('buyDate').value = '';
     document.getElementById('sellDate').value = '';
     document.getElementById('itemCategorie').value = 'Vêtements';
+    document.getElementById('itemColor').value = '';
+    document.getElementById('itemSize').value = '';
     document.getElementById('itemPhoto').value = '';
     document.getElementById('itemPhotoPreview').style.display = 'none';
     document.getElementById('itemPhotoFromStockWrap').style.display = 'none';
@@ -4306,6 +4431,8 @@
     const sellName = buyName;
     const sellPrice = parseFloat(document.getElementById('sellPrice').value);
     const categorie = document.getElementById('itemCategorie').value;
+    const color = document.getElementById('itemColor').value.trim();
+    const size = document.getElementById('itemSize').value.trim();
     const today = new Date();
     const todayIso = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
     const buyDate = document.getElementById('buyDate').value || todayIso;
@@ -4341,9 +4468,9 @@
     const stockIdToRemove = carriedFromStockId;
 
     if (editingItemId) {
-      await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl });
+      await updateItem(editingItemId, { buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl, color, size });
     } else {
-      await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl });
+      await addItem({ buyName, buyPrice, sellName, sellPrice, buyDate, sellDate, categorie, photoUrl, color, size });
     }
 
     // Si la vente provient du stock, on diminue la quantité (ou on retire l'article s'il n'en reste plus).
