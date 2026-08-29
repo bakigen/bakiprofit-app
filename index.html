@@ -1052,30 +1052,49 @@
     padding: 3px 8px;
     margin-bottom: 6px;
   }
+  .top-selling-dropdown-wrap {
+    background: var(--card);
+    border: 1px solid #3A2438;
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .top-selling-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .top-selling-chevron { color: var(--muted); transition: transform 0.2s; }
+  .top-selling-dropdown-wrap.open .top-selling-chevron { transform: rotate(180deg); }
+  .top-selling-dropdown-body { padding: 0 12px 12px; }
   .top-selling-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     background: #1F1219;
     border: 1px solid #3A2438;
-    border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    border-radius: 10px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
   }
   .top-selling-rank {
     flex-shrink: 0;
-    width: 26px; height: 26px;
+    width: 20px; height: 20px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--pink), var(--green));
     color: #0a0a0a;
     font-weight: 800;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     display: flex; align-items: center; justify-content: center;
   }
   .top-selling-info { flex: 1; min-width: 0; }
-  .top-selling-name { font-weight: 700; font-size: 0.85rem; color: var(--text); }
-  .top-selling-count { font-size: 0.7rem; color: var(--green); font-weight: 700; }
-  .top-selling-variant { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .top-selling-name { font-weight: 700; font-size: 0.75rem; color: var(--text); }
+  .top-selling-count { font-size: 0.62rem; color: var(--green); font-weight: 700; }
+  .top-selling-variant { font-size: 0.65rem; color: var(--muted); margin-top: 1px; }
   .stock-variant-list {
     margin-top: 10px;
     display: flex;
@@ -1810,12 +1829,6 @@
         </div>
       </div>
 
-      <div class="card" id="topSellingCard" style="display:none;">
-        <h2>🏆 Top ventes</h2>
-        <p style="color:var(--muted); font-size:0.82rem; margin-bottom:14px;">Tes articles les plus vendus, mis à jour automatiquement.</p>
-        <div id="topSellingList"></div>
-      </div>
-
       <div class="card">
         <h2>Enregistrer un article</h2>
         <div class="field" id="itemPhotoFromStockWrap" style="display:none;">
@@ -1952,6 +1965,16 @@
         </div>
         <button id="stockAddBtn">Ajouter au stock</button>
         <button id="stockCancelEditBtn" style="display:none; background:#3A2438; margin-top:8px;">Annuler la modification</button>
+      </div>
+
+      <div class="top-selling-dropdown-wrap" id="topSellingWrap" style="display:none;">
+        <div class="top-selling-dropdown-header" id="topSellingToggle">
+          <span>🏆 Top ventes</span>
+          <span class="top-selling-chevron" id="topSellingChevron">▾</span>
+        </div>
+        <div class="top-selling-dropdown-body" id="topSellingBody" style="display:none;">
+          <div id="topSellingList"></div>
+        </div>
       </div>
 
       <div class="card">
@@ -3446,6 +3469,8 @@
   async function loadStock() {
     allStockCache = await getStock();
     renderStockGrid();
+    const items = allItemsCache.length > 0 ? allItemsCache : await getItems();
+    renderTopSelling(items);
   }
 
   function renderStockGrid() {
@@ -3616,6 +3641,13 @@
   document.getElementById('stockViewMode').addEventListener('change', renderStockGrid);
   document.getElementById('stockColorFilter').addEventListener('change', renderStockGrid);
   document.getElementById('stockSizeFilter').addEventListener('change', renderStockGrid);
+
+  document.getElementById('topSellingToggle').addEventListener('click', () => {
+    const wrap = document.getElementById('topSellingWrap');
+    const body = document.getElementById('topSellingBody');
+    const isOpen = wrap.classList.toggle('open');
+    body.style.display = isOpen ? 'block' : 'none';
+  });
 
   function resetStockForm() {
     editingStockId = null;
@@ -3848,7 +3880,6 @@
     renderRecord(items);
     renderGoal(items);
     renderCategorieSummary(items);
-    renderTopSelling(items);
 
     const catFilter = document.getElementById('itemCategorieFilter').value;
     const filteredItems = catFilter === 'all' ? items : items.filter(i => (i.categorie || 'Autre') === catFilter);
@@ -4122,12 +4153,12 @@
 
   // ---- Top 10 des articles les plus vendus, avec la variante (couleur/taille) qui se vend le mieux ----
   function renderTopSelling(items) {
-    const card = document.getElementById('topSellingCard');
+    const wrap = document.getElementById('topSellingWrap');
     const listEl = document.getElementById('topSellingList');
-    if (!card || !listEl) return;
+    if (!wrap || !listEl) return;
 
     if (items.length === 0) {
-      card.style.display = 'none';
+      wrap.style.display = 'none';
       return;
     }
 
@@ -4146,11 +4177,11 @@
     const top10 = Object.values(groups).sort((a, b) => b.count - a.count).slice(0, 10);
 
     if (top10.length === 0) {
-      card.style.display = 'none';
+      wrap.style.display = 'none';
       return;
     }
 
-    card.style.display = 'block';
+    wrap.style.display = 'block';
 
     function topEntry(obj) {
       const entries = Object.entries(obj);
