@@ -1042,6 +1042,16 @@
     padding: 3px 8px;
     margin-bottom: 6px;
   }
+  .stock-low-badge {
+    display: inline-block;
+    background: rgba(255, 209, 102, 0.14);
+    color: #FFD166;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 3px 8px;
+    margin-bottom: 6px;
+  }
   .top-selling-row {
     display: flex;
     align-items: center;
@@ -1084,6 +1094,7 @@
   .stock-variant-info { display: flex; flex-direction: column; gap: 2px; }
   .stock-variant-label { font-size: 0.8rem; font-weight: 700; color: var(--text); }
   .stock-variant-row .stock-sleeping-badge { margin-left: 6px; margin-bottom: 0; }
+  .stock-variant-row .stock-low-badge { margin-left: 6px; margin-bottom: 0; }
   .stock-variant-row .pc-date { white-space: nowrap; }
   .stock-variant-actions { display: flex; gap: 4px; align-self: flex-end; }
   .stock-variant-actions button {
@@ -3507,6 +3518,7 @@
         const dateRef = s.buy_date || s.created_at;
         const daysInStock = Math.floor((Date.now() - new Date(dateRef).getTime()) / (24 * 60 * 60 * 1000));
         const isSleeping = viewMode === 'actif' && daysInStock >= 3;
+        const isLowStock = viewMode === 'actif' && (s.quantity || 0) === 1;
         const variantParts = [];
         if (s.color) variantParts.push(escapeHtml(s.color));
         if (s.size) variantParts.push(escapeHtml(s.size));
@@ -3524,6 +3536,7 @@
             <div class="stock-variant-info">
               <span class="stock-variant-label sensitive-stockTitres">${variantLabel} <span class="stock-qty-badge">x${s[qtyField] || 0}</span></span>
               ${isSleeping ? `<span class="stock-sleeping-badge">⏰ ${daysInStock}j</span>` : ''}
+              ${isLowStock ? `<span class="stock-low-badge">⚠️ Il ne t'en reste qu'un seul</span>` : ''}
               <div class="pc-date">Acheté le ${s.buy_date ? fmtDate(s.buy_date) : new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
             </div>
             ${actionsHtml}
