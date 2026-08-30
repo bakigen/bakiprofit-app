@@ -2339,6 +2339,26 @@
           </div>
         </div>
 
+        <div class="formation-module" data-fmodule="8c">
+          <div class="formation-module-header">
+            <div class="formation-module-num">💬</div>
+            <div class="formation-module-title">La communauté Discord BAKI</div>
+            <div class="formation-module-chevron">▾</div>
+          </div>
+          <div class="formation-module-body sensitive-textesFormation">
+            <p>En plus de cette formation, un serveur Discord est là pour t'accompagner au quotidien dans ton activité achat-revente.</p>
+            <ul>
+              <li><strong>Pose tes questions directement.</strong> Que ce soit un souci technique sur BAKIGEN/BAKIPROFIT ou une question sur ta méthode (prix, photo, négociation...), le serveur est fait pour ça.</li>
+              <li><strong>Le serveur est organisé par catégories</strong> : informations générales, affiliation, accès aux différents outils selon ton pack, et un espace vocal pour discuter en direct avec d'autres membres.</li>
+              <li><strong>L'entraide entre membres</strong> est encouragée : n'hésite pas à répondre à la question de quelqu'un d'autre si tu connais la réponse, ou à partager une astuce qui t'a bien servi.</li>
+              <li><strong>Reste informé·e</strong> des nouveautés, mises à jour et annonces importantes sur BAKI directement depuis le serveur.</li>
+            </ul>
+            <p style="margin-bottom:0; text-align:center;">
+              <a href="https://discord.gg/daN4xhjCp" target="_blank" class="help-contact-btn">💬 Rejoindre le Discord</a>
+            </p>
+          </div>
+        </div>
+
         <div class="formation-module" data-fmodule="9">
           <div class="formation-module-header">
             <div class="formation-module-num">❓</div>
@@ -3165,7 +3185,8 @@
     '7': "Gérer messages, négociations et ventes",
     '7b': "Relancer une annonce qui ne bouge pas",
     '8': "Expédition, service client et scaling",
-    '8b': "Bien gérer ton stock"
+    '8b': "Bien gérer ton stock",
+    '8c': "La communauté Discord BAKI"
   };
   const FORMATION_RELATED = {
     '1': ['4', '2'],
@@ -3174,10 +3195,10 @@
     '4': ['1', '5'],
     '5': ['6', '4'],
     '6': ['5', '2b'],
-    '7': ['7b', '8'],
+    '7': ['7b', '8c'],
     '7b': ['7', '4'],
-    '8': ['8b', '7'],
-    '8b': ['7b', '4']
+    '8': ['8b', '8c'],
+    '8b': ['7b', '8c']
   };
 
   document.querySelectorAll('.formation-module[data-fmodule]').forEach(mod => {
