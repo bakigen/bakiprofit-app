@@ -2847,6 +2847,25 @@
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
   }
 
+  // ---- Suivi des fiches produits déjà consultées (badge "Nouveau" qui ne revient plus) ----
+  const SEEN_PRODUCTS_KEY = 'bakiprofit_seen_products';
+
+  function getSeenProducts() {
+    try {
+      return JSON.parse(localStorage.getItem(SEEN_PRODUCTS_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function markProductSeen(id) {
+    const seen = getSeenProducts();
+    if (!seen.includes(id)) {
+      seen.push(id);
+      localStorage.setItem(SEEN_PRODUCTS_KEY, JSON.stringify(seen));
+    }
+  }
+
   function renderProductsGrid(data) {
     const gridEl = document.getElementById('productsGrid');
     const isAdmin = currentUserEmail === ADMIN_EMAIL;
@@ -2859,13 +2878,14 @@
 
     const now = Date.now();
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const seenProducts = getSeenProducts();
 
     gridEl.innerHTML = data.map(p => {
       const safeLink = p.link && !/^https?:\/\//i.test(p.link) ? 'https://' + p.link : p.link;
-      const isNew = (now - new Date(p.created_at).getTime()) < sevenDaysMs;
+      const isNew = (now - new Date(p.created_at).getTime()) < sevenDaysMs && !seenProducts.includes(p.id);
       const isFav = favs.includes(p.id);
       return `
-      <div class="product-card">
+      <div class="product-card" data-product-id="${p.id}">
         <button class="pc-fav-btn ${isFav ? 'active' : ''}" data-id="${p.id}">${isFav ? '★' : '☆'}</button>
         ${p.photo_url ? `<img class="sensitive-photos" src="${p.photo_url}" alt="${p.title}">` : ''}
         <div class="pc-body">
@@ -2887,6 +2907,17 @@
       </div>
     `;
     }).join('');
+
+    document.querySelectorAll('.product-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.productId;
+        const badge = card.querySelector('.pc-new-badge');
+        if (badge) {
+          markProductSeen(id);
+          badge.remove();
+        }
+      });
+    });
 
     document.querySelectorAll('.pc-fav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
